@@ -1,0 +1,22 @@
+
+// ============================================================================
+// GLOBAL NOTIFICATION STORE (No Provider Needed!)
+// ============================================================================
+
+import { Store } from 'react-synq-store';
+
+import { NotificationState } from "./types";
+
+const initialState: NotificationState = {
+  notifications: [],
+  unreadCount: 0,
+  stats: null,
+  preferences: null,
+  loading: false,
+  error: null,
+  isConnected: false,
+  lastSync: null
+};
+
+// Create global store instance
+export const notificationStore = new Store<NotificationState>(initialState);

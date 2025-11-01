@@ -1,0 +1,155 @@
+// ============================================================================
+// API CLIENT
+// ============================================================================
+
+import { NotificationConfig } from "./types";
+import {
+  Notification,
+  NotificationFilters,
+  NotificationPreferences,
+  NotificationStats} from '@synq/notifications-core';
+
+
+
+export class NotificationApiClient {
+  private config: NotificationConfig;
+  private ws?: WebSocket;
+  private pollInterval?: any;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+
+  constructor(config: NotificationConfig) {
+    this.config = config;
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
+    
+    const response = await fetch(`${this.config.apiUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async getNotifications(filters?: NotificationFilters): Promise<Notification[]> {
+    const params = new URLSearchParams();
+    if (filters?.status) {
+      params.append('status', Array.isArray(filters.status) ? filters.status.join(',') : filters.status);
+    }
+    if (filters?.type) {
+      params.append('type', Array.isArray(filters.type) ? filters.type.join(',') : filters.type);
+    }
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<Notification[]>(`/notifications/${this.config.userId}${query}`);
+  }
+
+  async getUnreadCount(): Promise<number> {
+    const result = await this.request<{ count: number }>(`/notifications/${this.config.userId}/unread-count`);
+    return result.count;
+  }
+
+  async getStats(): Promise<NotificationStats> {
+    return this.request<NotificationStats>(`/notifications/${this.config.userId}/stats`);
+  }
+
+  async getPreferences(): Promise<NotificationPreferences> {
+    return this.request<NotificationPreferences>(`/notifications/${this.config.userId}/preferences`);
+  }
+
+  async markAsRead(notificationId: string): Promise<void> {
+    await this.request(`/notifications/${notificationId}/read`, { method: 'POST' });
+  }
+
+  async markAllAsRead(): Promise<void> {
+    await this.request(`/notifications/${this.config.userId}/read-all`, { method: 'POST' });
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    await this.request(`/notifications/${notificationId}`, { method: 'DELETE' });
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.request(`/notifications/${this.config.userId}`, { method: 'DELETE' });
+  }
+
+  async updatePreferences(prefs: Partial<NotificationPreferences>): Promise<void> {
+    await this.request(`/notifications/${this.config.userId}/preferences`, {
+      method: 'PUT',
+      body: JSON.stringify(prefs)
+    });
+  }
+
+  connectWebSocket(onMessage: (data: any) => void): void {
+    if (!this.config.wsUrl) return;
+
+    const connect = () => {
+      this.ws = new WebSocket(`${this.config.wsUrl}?userId=${this.config.userId}`);
+
+      this.ws.onopen = () => {
+        console.log('🔌 WebSocket connected');
+        this.reconnectAttempts = 0;
+      };
+
+      this.ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        onMessage(data);
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+      };
+
+      this.ws.onclose = () => {
+        console.log('🔌 WebSocket disconnected');
+        
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+          console.log(`🔄 Reconnecting in ${delay}ms...`);
+          setTimeout(connect, delay);
+        }
+      };
+    };
+
+    connect();
+  }
+
+  disconnectWebSocket(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = undefined;
+    }
+  }
+
+  startPolling(onPoll: () => Promise<void>): void {
+    if (!this.config.pollInterval) return;
+
+    this.pollInterval = setInterval(async () => {
+      try {
+        await onPoll();
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, this.config.pollInterval);
+  }
+
+  stopPolling(): void {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = undefined;
+    }
+  }
+}
