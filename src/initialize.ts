@@ -13,6 +13,7 @@ export function initializeNotifications(config: NotificationConfig) {
 
   // Setup WebSocket or Polling
   if (config.wsUrl) {
+    console.log("About to connect to WebSocket at: ", config.wsUrl);
     apiClient.connectWebSocket((data) => {
       if (data.type === 'notification') {
         addNotification(data.notification);
@@ -44,6 +45,7 @@ export function initializeNotifications(config: NotificationConfig) {
   fetchNotifications();
   fetchUnreadCount();
   fetchPreferences();
+  console.log("Notifications initialized");
 }
 
 export function disconnectNotifications() {
