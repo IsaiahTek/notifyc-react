@@ -6,7 +6,7 @@ import { notificationStore } from './store'
 // ============================================================================
 // INITIALIZATION (Call once in your app)
 // ============================================================================
-let apiClient: NotificationApiClient | null = null;
+export let apiClient: NotificationApiClient | null = null;
 
 export function initializeNotifications(config: NotificationConfig) {
   apiClient = new NotificationApiClient(config);

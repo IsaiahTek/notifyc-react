@@ -57,7 +57,7 @@ exports.deleteNotification = deleteNotification;
 exports.deleteAll = deleteAll;
 exports.updatePreferences = updatePreferences;
 var store_1 = require("./store");
-var apiClient = null;
+var initialize_1 = require("./initialize");
 // const apiClient = new let apiClient: NotificationApiClient | null = null;
 function fetchNotifications(filters) {
     return __awaiter(this, void 0, void 0, function () {
@@ -65,13 +65,13 @@ function fetchNotifications(filters) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         throw new Error('Call initializeNotifications() first');
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { loading: true, error: null })); }, "key");
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.getNotifications(filters)];
+                    return [4 /*yield*/, initialize_1.apiClient.getNotifications(filters)];
                 case 2:
                     notifications_1 = _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: notifications_1, loading: false, lastSync: new Date() })); }, "key");
@@ -91,12 +91,12 @@ function fetchUnreadCount() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.getUnreadCount()];
+                    return [4 /*yield*/, initialize_1.apiClient.getUnreadCount()];
                 case 2:
                     unreadCount_1 = _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { unreadCount: unreadCount_1 })); }, "key");
@@ -116,12 +116,12 @@ function fetchStats() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.getStats()];
+                    return [4 /*yield*/, initialize_1.apiClient.getStats()];
                 case 2:
                     stats_1 = _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { stats: stats_1 })); }, "key");
@@ -141,12 +141,12 @@ function fetchPreferences() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.getPreferences()];
+                    return [4 /*yield*/, initialize_1.apiClient.getPreferences()];
                 case 2:
                     preferences_1 = _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { preferences: preferences_1 })); }, "key");
@@ -166,12 +166,12 @@ function markAsRead(notificationId) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
-                    return [4 /*yield*/, apiClient.markAsRead(notificationId)];
+                    return [4 /*yield*/, initialize_1.apiClient.markAsRead(notificationId)];
                 case 2:
                     _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: state.notifications.map(function (n) {
@@ -197,12 +197,12 @@ function markAllAsRead() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.markAllAsRead()];
+                    return [4 /*yield*/, initialize_1.apiClient.markAllAsRead()];
                 case 2:
                     _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: state.notifications.map(function (n) { return (__assign(__assign({}, n), { status: 'read', readAt: new Date() })); }), unreadCount: 0 })); }, "key");
@@ -222,12 +222,12 @@ function deleteNotification(notificationId) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
-                    return [4 /*yield*/, apiClient.deleteNotification(notificationId)];
+                    return [4 /*yield*/, initialize_1.apiClient.deleteNotification(notificationId)];
                 case 2:
                     _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: state.notifications.filter(function (n) { return n.id !== notificationId; }) })); }, "key");
@@ -250,12 +250,12 @@ function deleteAll() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.deleteAll()];
+                    return [4 /*yield*/, initialize_1.apiClient.deleteAll()];
                 case 2:
                     _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: [], unreadCount: 0 })); }, "key");
@@ -275,12 +275,12 @@ function updatePreferences(prefs) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!apiClient)
+                    if (!initialize_1.apiClient)
                         return [2 /*return*/];
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, apiClient.updatePreferences(prefs)];
+                    return [4 /*yield*/, initialize_1.apiClient.updatePreferences(prefs)];
                 case 2:
                     _a.sent();
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { preferences: state.preferences ? __assign(__assign({}, state.preferences), prefs) : null })); }, "key");

@@ -7,8 +7,7 @@ import {
   NotificationState} from './types';
 import { NotificationApiClient } from './api_client';
 import { notificationStore } from './store';
-
-  let apiClient: NotificationApiClient | null = null;
+import { apiClient } from './initialize';
 
 
 // const apiClient = new let apiClient: NotificationApiClient | null = null;

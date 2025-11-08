@@ -47,6 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.apiClient = void 0;
 exports.initializeNotifications = initializeNotifications;
 exports.disconnectNotifications = disconnectNotifications;
 var actions_1 = require("./actions");
@@ -56,13 +57,13 @@ var store_1 = require("./store");
 // ============================================================================
 // INITIALIZATION (Call once in your app)
 // ============================================================================
-var apiClient = null;
+exports.apiClient = null;
 function initializeNotifications(config) {
     var _this = this;
-    apiClient = new api_client_1.NotificationApiClient(config);
+    exports.apiClient = new api_client_1.NotificationApiClient(config);
     // Setup WebSocket or Polling
     if (config.wsUrl) {
-        apiClient.connectWebSocket(function (data) {
+        exports.apiClient.connectWebSocket(function (data) {
             if (data.type === 'notification') {
                 (0, handlers_1.addNotification)(data.notification);
             }
@@ -79,7 +80,7 @@ function initializeNotifications(config) {
         store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), 'lastSync');
     }
     else if (config.pollInterval) {
-        apiClient.startPolling(function () { return __awaiter(_this, void 0, void 0, function () {
+        exports.apiClient.startPolling(function () { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, actions_1.fetchNotifications)()];
@@ -101,9 +102,9 @@ function initializeNotifications(config) {
     (0, actions_1.fetchPreferences)();
 }
 function disconnectNotifications() {
-    if (apiClient) {
-        apiClient.disconnectWebSocket();
-        apiClient.stopPolling();
+    if (exports.apiClient) {
+        exports.apiClient.disconnectWebSocket();
+        exports.apiClient.stopPolling();
         var state = store_1.notificationStore.snapshot[0];
         store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: false }), 'lastSync');
     }

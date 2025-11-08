@@ -1,4 +1,4 @@
-# @synq/notifications-react - Provider-less Usage Guide
+# notifyc-react - Provider-less Usage Guide
 
 Complete guide for using Synq Notifications in React with **react-synq-store** (NO PROVIDER NEEDED!)
 
@@ -14,7 +14,7 @@ Unlike traditional React state management, `react-synq-store` doesn't require wr
 ## 📦 Installation
 
 ```bash
-npm install @synq/notifications-react react-synq-store @synq/notifications-core
+npm install notifyc-react react-synq-store @synq/notifications-core
 ```
 
 ## 🎯 Quick Start (3 Steps)
@@ -28,7 +28,7 @@ Call `initializeNotifications()` once in your app entry point:
 // or _app.tsx (Next.js Pages Router)
 // or main.tsx (Vite/CRA)
 
-import { initializeNotifications } from '@synq/notifications-react';
+import { initializeNotifications } from 'notifyc-react';
 
 // Initialize on client side
 if (typeof window !== 'undefined') {
@@ -57,7 +57,7 @@ export default function RootLayout({ children }) {
 
 **In your header:**
 ```tsx
-import { useUnreadCount } from '@synq/notifications-react';
+import { useUnreadCount } from 'notifyc-react';
 
 function Header() {
   const unreadCount = useUnreadCount(); // ✨ Works without provider!
@@ -77,7 +77,7 @@ function Header() {
 
 **In your sidebar:**
 ```tsx
-import { useNotifications } from '@synq/notifications-react';
+import { useNotifications } from 'notifyc-react';
 
 function Sidebar() {
   const { notifications } = useNotifications({ status: 'unread' });
@@ -93,7 +93,7 @@ function Sidebar() {
 
 **Anywhere else:**
 ```tsx
-import { markAsRead } from '@synq/notifications-react';
+import { markAsRead } from 'notifyc-react';
 
 function RandomComponent() {
   return (
@@ -253,7 +253,7 @@ import {
   deleteNotification,
   deleteAll,
   updatePreferences
-} from '@synq/notifications-react';
+} from 'notifyc-react';
 
 // Call from anywhere - no hooks needed!
 await markAsRead('notif_123');
@@ -284,7 +284,7 @@ export default function RootLayout({ children }) {
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useNotifications } from "@synq/notifications-react";
+import { useNotifications } from "notifyc-react";
 
 export default function NotificationToastContainer() {
   const { notifications, markAsRead } = useNotifications({
@@ -616,7 +616,7 @@ const { notifications, markAsRead } = useNotifications();
 ## 🧪 Testing
 
 ```tsx
-import { notificationStore, initializeNotifications } from '@synq/notifications-react';
+import { notificationStore, initializeNotifications } from 'notifyc-react';
 
 beforeEach(() => {
   // Reset store
