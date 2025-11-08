@@ -1,0 +1,25 @@
+import { NotificationConfig } from "./types";
+import { Notification, NotificationFilters, NotificationPreferences, NotificationStats } from './types';
+export declare class NotificationApiClient {
+    private config;
+    private ws?;
+    private pollInterval?;
+    private reconnectAttempts;
+    private maxReconnectAttempts;
+    constructor(config: NotificationConfig);
+    private request;
+    getNotifications(filters?: NotificationFilters): Promise<Notification[]>;
+    getUnreadCount(): Promise<number>;
+    getStats(): Promise<NotificationStats>;
+    getPreferences(): Promise<NotificationPreferences>;
+    markAsRead(notificationId: string): Promise<void>;
+    markAllAsRead(): Promise<void>;
+    deleteNotification(notificationId: string): Promise<void>;
+    deleteAll(): Promise<void>;
+    updatePreferences(prefs: Partial<NotificationPreferences>): Promise<void>;
+    connectWebSocket(onMessage: (data: any) => void): void;
+    disconnectWebSocket(): void;
+    startPolling(onPoll: () => Promise<void>): void;
+    stopPolling(): void;
+    private parseNotificationDates;
+}

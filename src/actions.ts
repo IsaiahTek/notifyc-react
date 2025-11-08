@@ -3,7 +3,8 @@
 // ============================================================================
 import {
   NotificationFilters,
-  NotificationPreferences} from '@synq/notifications-core';
+  NotificationPreferences,
+  NotificationState} from './types';
 import { NotificationApiClient } from './api_client';
 import { notificationStore } from './store';
 
@@ -16,7 +17,7 @@ import { notificationStore } from './store';
 export async function fetchNotifications(filters?: NotificationFilters) {
   if (!apiClient) throw new Error('Call initializeNotifications() first');
   
-  notificationStore.update((state) => ({ ...state, loading: true, error: null }));
+  notificationStore.update((state: NotificationState) => ({ ...state, loading: true, error: null }), "key");
   
   try {
     const notifications = await apiClient.getNotifications(filters);
@@ -25,13 +26,13 @@ export async function fetchNotifications(filters?: NotificationFilters) {
       notifications,
       loading: false,
       lastSync: new Date()
-    }));
+    }), "key");
   } catch (error) {
     notificationStore.update((state) => ({
       ...state,
       loading: false,
       error: (error as Error).message
-    }));
+    }), "key");
   }
 }
 
@@ -40,7 +41,7 @@ export async function fetchUnreadCount() {
   
   try {
     const unreadCount = await apiClient.getUnreadCount();
-    notificationStore.update((state) => ({ ...state, unreadCount }));
+    notificationStore.update((state) => ({ ...state, unreadCount }), "key");
   } catch (error) {
     console.error('Failed to fetch unread count:', error);
   }
@@ -51,7 +52,7 @@ export async function fetchStats() {
   
   try {
     const stats = await apiClient.getStats();
-    notificationStore.update((state) => ({ ...state, stats }));
+    notificationStore.update((state) => ({ ...state, stats }), "key");
   } catch (error) {
     console.error('Failed to fetch stats:', error);
   }
@@ -62,7 +63,7 @@ export async function fetchPreferences() {
   
   try {
     const preferences = await apiClient.getPreferences();
-    notificationStore.update((state) => ({ ...state, preferences }));
+    notificationStore.update((state) => ({ ...state, preferences }), "key");
   } catch (error) {
     console.error('Failed to fetch preferences:', error);
   }
@@ -81,7 +82,7 @@ export async function markAsRead(notificationId: string) {
           ? { ...n, status: 'read' as const, readAt: new Date() }
           : n
       )
-    }));
+    }), "key");
     
     await fetchUnreadCount();
   } catch (error) {
@@ -103,7 +104,7 @@ export async function markAllAsRead() {
         readAt: new Date()
       })),
       unreadCount: 0
-    }));
+    }), "key");
   } catch (error) {
     console.error('Failed to mark all as read:', error);
   }
@@ -118,7 +119,7 @@ export async function deleteNotification(notificationId: string) {
     notificationStore.update((state) => ({
       ...state,
       notifications: state.notifications.filter(n => n.id !== notificationId)
-    }));
+    }), "key");
     
     await fetchUnreadCount();
   } catch (error) {
@@ -136,7 +137,7 @@ export async function deleteAll() {
       ...state,
       notifications: [],
       unreadCount: 0
-    }));
+    }), "key");
   } catch (error) {
     console.error('Failed to delete all:', error);
   }
@@ -151,7 +152,7 @@ export async function updatePreferences(prefs: Partial<NotificationPreferences>)
     notificationStore.update((state) => ({
       ...state,
       preferences: state.preferences ? { ...state.preferences, ...prefs } : null
-    }));
+    }), "key");
   } catch (error) {
     console.error('Failed to update preferences:', error);
   }

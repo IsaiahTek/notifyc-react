@@ -15,8 +15,9 @@ const initialState: NotificationState = {
   loading: false,
   error: null,
   isConnected: false,
-  lastSync: null
+  lastSync: null,
+  key: "notifications"
 };
 
 // Create global store instance
-export const notificationStore = new Store<NotificationState>(initialState);
+export const notificationStore = new Store<NotificationState>([initialState]);

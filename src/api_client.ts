@@ -7,7 +7,7 @@ import {
   Notification,
   NotificationFilters,
   NotificationPreferences,
-  NotificationStats} from '@synq/notifications-core';
+  NotificationStats} from './types';
 
 
 
@@ -53,7 +53,10 @@ export class NotificationApiClient {
     if (filters?.offset) params.append('offset', filters.offset.toString());
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request<Notification[]>(`/notifications/${this.config.userId}${query}`);
+    const notifications = await this.request<Notification[]>(`/notifications/${this.config.userId}${query}`);
+    
+    // Parse date strings to Date objects
+    return notifications.map(this.parseNotificationDates);
   }
 
   async getUnreadCount(): Promise<number> {
@@ -66,7 +69,8 @@ export class NotificationApiClient {
   }
 
   async getPreferences(): Promise<NotificationPreferences> {
-    return this.request<NotificationPreferences>(`/notifications/${this.config.userId}/preferences`);
+    const prefs = await this.request<NotificationPreferences>(`/notifications/${this.config.userId}/preferences`);
+    return prefs;
   }
 
   async markAsRead(notificationId: string): Promise<void> {
@@ -105,6 +109,12 @@ export class NotificationApiClient {
 
       this.ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        
+        // Parse dates in received data
+        if (data.notification) {
+          data.notification = this.parseNotificationDates(data.notification);
+        }
+        
         onMessage(data);
       };
 
@@ -151,5 +161,15 @@ export class NotificationApiClient {
       clearInterval(this.pollInterval);
       this.pollInterval = undefined;
     }
+  }
+
+  private parseNotificationDates(notification: Notification): Notification {
+    return {
+      ...notification,
+      createdAt: notification.createdAt ? new Date(notification.createdAt) : new Date(),
+      readAt: notification.readAt ? new Date(notification.readAt) : undefined,
+      scheduledFor: notification.scheduledFor ? new Date(notification.scheduledFor) : undefined,
+      expiresAt: notification.expiresAt ? new Date(notification.expiresAt) : undefined,
+    };
   }
 }

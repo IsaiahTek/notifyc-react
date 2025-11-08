@@ -3,21 +3,23 @@
 // ============================================================================
 
 import { useStore } from 'react-synq-store';
+
 import { markAsRead, markAllAsRead, deleteNotification, deleteAll, fetchNotifications, fetchStats, updatePreferences } from '../actions';
+
 import { notificationStore } from '../store';
+
 import {
-  Notification,
   NotificationFilters,
-  NotificationPreferences,
-  NotificationStats,
-  NotificationEvent
-} from '@synq/notifications-core';
+  NotificationState
+} from '../types';
+
+import { useEffect } from 'react';
 
 /**
  * Main hook for notifications with optional filtering
  */
 export function useNotifications(filters?: NotificationFilters) {
-  const state = useStore(notificationStore);
+  const state = useStore(notificationStore) as NotificationState;
   
   // Filter notifications client-side if filters provided
   const filteredNotifications = filters
@@ -50,16 +52,19 @@ export function useNotifications(filters?: NotificationFilters) {
  * Optimized hook for just unread count (only re-renders when count changes)
  */
 export function useUnreadCount() {
-  return useStore(notificationStore, (state) => state.unreadCount);
+  const data = useStore(notificationStore) as NotificationState;
+  return data.unreadCount
 }
 
 /**
  * Hook for notification stats
  */
 export function useNotificationStats() {
-  const stats = useStore(notificationStore, (state) => state.stats);
+
+  const data = useStore(notificationStore) as NotificationState;
+  const stats = data.stats;
   
-  React.useEffect(() => {
+  useEffect(() => {
     fetchStats();
   }, []);
   
@@ -70,7 +75,7 @@ export function useNotificationStats() {
  * Hook for user preferences
  */
 export function useNotificationPreferences() {
-  const preferences = useStore(notificationStore, (state) => state.preferences);
+  const preferences = (useStore(notificationStore) as NotificationState).preferences;
   
   return {
     preferences,
@@ -82,12 +87,10 @@ export function useNotificationPreferences() {
  * Hook for a single notification by ID
  */
 export function useNotification(notificationId: string) {
-  const notification = useStore(
-    notificationStore,
-    (state) => state.notifications.find(n => n.id === notificationId)
-  );
+  const notification = useStore(notificationStore) as NotificationState;
   
   return {
+    // notification: notification.notifications.find(n => n.id === notificationId) as Notification,
     notification,
     markAsRead: () => markAsRead(notificationId),
     delete: () => deleteNotification(notificationId)
@@ -98,5 +101,5 @@ export function useNotification(notificationId: string) {
  * Hook for connection status
  */
 export function useNotificationConnection() {
-  return useStore(notificationStore, (state) => state.isConnected);
+  return (useStore(notificationStore) as NotificationState).isConnected;
 }
