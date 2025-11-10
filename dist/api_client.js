@@ -51,10 +51,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationApiClient = void 0;
+var socket_io_client_1 = require("socket.io-client");
 var NotificationApiClient = /** @class */ (function () {
     function NotificationApiClient(config) {
+        var _this = this;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
+        // Helper function to process messages (optional, based on your original logic)
+        this.handleMessage = function (data, onMessage) {
+            if (data.notification) {
+                data.notification = _this.parseNotificationDates(data.notification);
+            }
+            onMessage(data);
+        };
         this.config = config;
     }
     NotificationApiClient.prototype.request = function (endpoint_1) {
@@ -213,31 +222,58 @@ var NotificationApiClient = /** @class */ (function () {
         if (!this.config.wsUrl)
             return;
         var connect = function () {
-            _this.ws = new WebSocket("".concat(_this.config.wsUrl, "?userId=").concat(_this.config.userId));
-            _this.ws.onopen = function () {
+            _this.ws = (0, socket_io_client_1.io)(_this.config.wsUrl, {
+                query: {
+                    userId: _this.config.userId,
+                },
+                // Force WebSocket transport for performance, though 'polling' fallback is common
+                transports: ['websocket', 'polling'],
+                reconnectionAttempts: _this.maxReconnectAttempts
+            });
+            // this.ws.onmessage = (event) => {
+            //   const data = JSON.parse(event.data);
+            //   // Parse dates in received data
+            //   if (data.notification) {
+            //     data.notification = this.parseNotificationDates(data.notification);
+            //   }
+            //   onMessage(data);
+            // };
+            // this.ws.onerror = (error) => {
+            //   console.error('❌ WebSocket error:', error);
+            // };
+            // this.ws.onclose = () => {
+            //   console.log('🔌 WebSocket disconnected');
+            //   if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            //     this.reconnectAttempts++;
+            //     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+            //     console.log(`🔄 Reconnecting in ${delay}ms...`);
+            //     setTimeout(connect, delay);
+            //   }
+            // };
+            _this.ws.on('connect', function () {
                 console.log('🔌 WebSocket connected');
                 _this.reconnectAttempts = 0;
-            };
-            _this.ws.onmessage = function (event) {
-                var data = JSON.parse(event.data);
-                // Parse dates in received data
-                if (data.notification) {
-                    data.notification = _this.parseNotificationDates(data.notification);
-                }
-                onMessage(data);
-            };
-            _this.ws.onerror = function (error) {
-                console.error('❌ WebSocket error:', error);
-            };
-            _this.ws.onclose = function () {
-                console.log('🔌 WebSocket disconnected');
-                if (_this.reconnectAttempts < _this.maxReconnectAttempts) {
-                    _this.reconnectAttempts++;
-                    var delay = Math.min(1000 * Math.pow(2, _this.reconnectAttempts), 30000);
-                    console.log("\uD83D\uDD04 Reconnecting in ".concat(delay, "ms..."));
-                    setTimeout(connect, delay);
-                }
-            };
+            });
+            // Listen for the custom event emitted by your NestJS gateway
+            _this.ws.on('initial-data', function (data) {
+                // Handle your custom initial-data event
+                _this.handleMessage(data, onMessage);
+            });
+            _this.ws.on('notification', function (data) {
+                // Handle your custom 'notification' event
+                _this.handleMessage(data, onMessage);
+            });
+            _this.ws.on('unread-count', function (data) {
+                // Handle your custom 'unread-count' event
+                _this.handleMessage(data, onMessage);
+            });
+            _this.ws.on('error', function (error) {
+                console.error('❌ Socket.IO error:', error);
+            });
+            _this.ws.on('disconnect', function (reason) {
+                console.log("\uD83D\uDD0C Socket.IO disconnected. Reason: ".concat(reason));
+                // Socket.IO's built-in reconnection handles the rest.
+            });
         };
         connect();
     };

@@ -58,26 +58,27 @@ var store_1 = require("./store");
 // INITIALIZATION (Call once in your app)
 // ============================================================================
 exports.apiClient = null;
-function initializeNotifications(config) {
+function initializeNotifications(config, onInitialized) {
     var _this = this;
     exports.apiClient = new api_client_1.NotificationApiClient(config);
     // Setup WebSocket or Polling
     if (config.wsUrl) {
+        console.log("About to connect to WebSocket at: ", config.wsUrl);
         exports.apiClient.connectWebSocket(function (data) {
             if (data.type === 'notification') {
                 (0, handlers_1.addNotification)(data.notification);
             }
             else if (data.type === 'unread-count') {
                 var state_1 = store_1.notificationStore.snapshot[0];
-                store_1.notificationStore.update(__assign(__assign({}, state_1), { unreadCount: data.count }), 'lastSync');
+                store_1.notificationStore.update(__assign(__assign({}, state_1), { unreadCount: data.count }), "key");
             }
             else if (data.type === 'initial-data') {
                 var state_2 = store_1.notificationStore.snapshot[0];
-                store_1.notificationStore.update(__assign(__assign({}, state_2), { notifications: data.notifications, unreadCount: data.unreadCount, isConnected: true }), 'lastSync');
+                store_1.notificationStore.update(__assign(__assign({}, state_2), { notifications: data.notifications, unreadCount: data.unreadCount, isConnected: true }), "key");
             }
         });
         var state = store_1.notificationStore.snapshot[0];
-        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), 'lastSync');
+        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), "key");
     }
     else if (config.pollInterval) {
         exports.apiClient.startPolling(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -94,18 +95,20 @@ function initializeNotifications(config) {
             });
         }); });
         var state = store_1.notificationStore.snapshot[0];
-        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), 'lastSync');
+        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), "key");
     }
     // Initial fetch
     (0, actions_1.fetchNotifications)();
     (0, actions_1.fetchUnreadCount)();
     (0, actions_1.fetchPreferences)();
+    // Call onInitialized callback
+    onInitialized && onInitialized();
 }
 function disconnectNotifications() {
     if (exports.apiClient) {
         exports.apiClient.disconnectWebSocket();
         exports.apiClient.stopPolling();
-        var state = store_1.notificationStore.snapshot[0];
-        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: false }), 'lastSync');
+        var state = store_1.notificationStore.snapshot;
+        store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: false }), "key");
     }
 }

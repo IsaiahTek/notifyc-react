@@ -31,7 +31,7 @@ function addNotification(notification) {
         ? state.unreadCount + 1
         : state.unreadCount;
     var nextState = __assign(__assign({}, state), { notifications: __spreadArray([notification], state.notifications, true), unreadCount: unreadCount });
-    store_1.notificationStore.update(nextState, 'lastSync');
+    store_1.notificationStore.update(nextState, "key");
 }
 // export function handleNotificationEvent(event: NotificationEvent) {
 //   switch (event.type) {

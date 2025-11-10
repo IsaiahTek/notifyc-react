@@ -18,6 +18,7 @@ export declare class NotificationApiClient {
     deleteAll(): Promise<void>;
     updatePreferences(prefs: Partial<NotificationPreferences>): Promise<void>;
     connectWebSocket(onMessage: (data: any) => void): void;
+    private handleMessage;
     disconnectWebSocket(): void;
     startPolling(onPoll: () => Promise<void>): void;
     stopPolling(): void;
