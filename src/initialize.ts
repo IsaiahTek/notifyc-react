@@ -15,6 +15,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
   if (config.wsUrl) {
     console.log("About to connect to WebSocket at: ", config.wsUrl);
     apiClient.connectWebSocket((data) => {
+      console.log("GOT NEW NOTIFICATION: ", data)
       if (data.type === 'notification') {
         addNotification(data.notification);
       } else if (data.type === 'unread-count') {
