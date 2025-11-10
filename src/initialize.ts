@@ -1,14 +1,14 @@
 import { fetchNotifications, fetchUnreadCount, fetchPreferences } from './actions';
 import { NotificationApiClient } from './api_client';
 import { addNotification } from './handlers'
-import { NotificationConfig } from './types';
+import { NotificationConfig, NotificationState } from './types';
 import { notificationStore } from './store'
 // ============================================================================
 // INITIALIZATION (Call once in your app)
 // ============================================================================
 export let apiClient: NotificationApiClient | null = null;
 
-export function initializeNotifications(config: NotificationConfig) {
+export function initializeNotifications(config: NotificationConfig, onInitialized?: () => void) {
   apiClient = new NotificationApiClient(config);
 
   // Setup WebSocket or Polling
@@ -19,7 +19,7 @@ export function initializeNotifications(config: NotificationConfig) {
         addNotification(data.notification);
       } else if (data.type === 'unread-count') {
         const state = notificationStore.snapshot[0];
-        notificationStore.update({ ...state, unreadCount: data.count }, 'lastSync');
+        notificationStore.update({ ...state, unreadCount: data.count }, "key");
       } else if (data.type === 'initial-data') {
         const state = notificationStore.snapshot[0];
         notificationStore.update({
@@ -27,32 +27,34 @@ export function initializeNotifications(config: NotificationConfig) {
           notifications: data.notifications,
           unreadCount: data.unreadCount,
           isConnected: true
-        }, 'lastSync');
+        }, "key");
       }
     });
     const state = notificationStore.snapshot[0];
-    notificationStore.update({ ...state, isConnected: true }, 'lastSync');
+    notificationStore.update({ ...state, isConnected: true }, "key");
   } else if (config.pollInterval) {
     apiClient.startPolling(async () => {
       await fetchNotifications();
       await fetchUnreadCount();
     });
     const state = notificationStore.snapshot[0];
-    notificationStore.update({ ...state, isConnected: true }, 'lastSync');
+    notificationStore.update({ ...state, isConnected: true }, "key");
   }
 
   // Initial fetch
   fetchNotifications();
   fetchUnreadCount();
   fetchPreferences();
-  console.log("Notifications initialized");
+
+  // Call onInitialized callback
+  onInitialized && onInitialized();
 }
 
 export function disconnectNotifications() {
   if (apiClient) {
     apiClient.disconnectWebSocket();
     apiClient.stopPolling();
-    const state = notificationStore.snapshot[0];
-    notificationStore.update({ ...state, isConnected: false }, 'lastSync');
+    const state = notificationStore.snapshot as NotificationState;
+    notificationStore.update({ ...state, isConnected: false }, "key");
   }
 }

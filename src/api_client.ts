@@ -2,6 +2,7 @@
 // API CLIENT
 // ============================================================================
 
+import { io, Socket } from "socket.io-client";
 import { NotificationConfig } from "./types";
 import {
   Notification,
@@ -13,7 +14,7 @@ import {
 
 export class NotificationApiClient {
   private config: NotificationConfig;
-  private ws?: WebSocket;
+  private ws?: Socket;
   private pollInterval?: any;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
@@ -100,43 +101,85 @@ export class NotificationApiClient {
     if (!this.config.wsUrl) return;
 
     const connect = () => {
-      this.ws = new WebSocket(`${this.config.wsUrl}?userId=${this.config.userId}`);
+      
+      this.ws = io(this.config.wsUrl!, {
+        query: { // Pass userId as a 'query' option for the handshake
+          userId: this.config.userId,
+        },
+        // Force WebSocket transport for performance, though 'polling' fallback is common
+        transports: ['websocket', 'polling'], 
+        reconnectionAttempts: this.maxReconnectAttempts
+      });
 
-      this.ws.onopen = () => {
+      
+      // this.ws.onmessage = (event) => {
+        //   const data = JSON.parse(event.data);
+        
+      //   // Parse dates in received data
+      //   if (data.notification) {
+      //     data.notification = this.parseNotificationDates(data.notification);
+      //   }
+        
+      //   onMessage(data);
+      // };
+
+      // this.ws.onerror = (error) => {
+      //   console.error('❌ WebSocket error:', error);
+      // };
+
+      // this.ws.onclose = () => {
+      //   console.log('🔌 WebSocket disconnected');
+        
+      //   if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      //     this.reconnectAttempts++;
+      //     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      //     console.log(`🔄 Reconnecting in ${delay}ms...`);
+      //     setTimeout(connect, delay);
+      //   }
+      // };
+
+      this.ws.on('connect', () => {
         console.log('🔌 WebSocket connected');
         this.reconnectAttempts = 0;
-      };
+      });
+      // Listen for the custom event emitted by your NestJS gateway
+      this.ws.on('initial-data', (data: any) => {
+        // Handle your custom initial-data event
+        this.handleMessage(data, onMessage); 
+      });
 
-      this.ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        // Parse dates in received data
-        if (data.notification) {
-          data.notification = this.parseNotificationDates(data.notification);
-        }
-        
-        onMessage(data);
-      };
+      this.ws.on('notification', (data: any) => {
+        // Handle your custom 'notification' event
+        this.handleMessage(data, onMessage); 
+      });
 
-      this.ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
-      };
+      this.ws.on('unread-count', (data: any) => {
+        // Handle your custom 'unread-count' event
+        this.handleMessage(data, onMessage); 
+      });
 
-      this.ws.onclose = () => {
-        console.log('🔌 WebSocket disconnected');
-        
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-          console.log(`🔄 Reconnecting in ${delay}ms...`);
-          setTimeout(connect, delay);
-        }
-      };
+      this.ws.on('error', (error: any) => { // Socket.IO uses 'error'
+        console.error('❌ Socket.IO error:', error);
+      });
+      
+      this.ws.on('disconnect', (reason: string) => { // Socket.IO uses 'disconnect'
+        console.log(`🔌 Socket.IO disconnected. Reason: ${reason}`);
+        // Socket.IO's built-in reconnection handles the rest.
+      });
+
     };
-
+    
     connect();
   }
 
+  // Helper function to process messages (optional, based on your original logic)
+  private handleMessage = (data: any, onMessage: (data: any) => void) => {
+      if (data.notification) {
+          data.notification = this.parseNotificationDates(data.notification);
+      }
+      onMessage(data);
+  }
+  
   disconnectWebSocket(): void {
     if (this.ws) {
       this.ws.close();

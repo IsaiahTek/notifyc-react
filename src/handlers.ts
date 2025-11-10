@@ -22,7 +22,7 @@ export function addNotification(notification: Notification) {
     unreadCount
   };
 
-  notificationStore.update(nextState, 'lastSync');
+  notificationStore.update(nextState, "key");
 }
 
 
