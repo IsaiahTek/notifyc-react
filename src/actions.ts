@@ -23,7 +23,7 @@ export async function fetchNotifications(filters?: NotificationFilters) {
   
   try {
     const notifications = await apiClient.getNotifications(filters);
-    console.log("FETCHED NOTIFICATIONS: ", notifications);
+    console.log("FETCHED NOTIFICATIONS: ", notifications, " CURRENT STATE: ", notificationStore.snapshot);
     notificationStore.update((state) => ({
       ...state,
       notifications,

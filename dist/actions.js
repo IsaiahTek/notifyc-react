@@ -76,7 +76,7 @@ function fetchNotifications(filters) {
                     return [4 /*yield*/, initialize_1.apiClient.getNotifications(filters)];
                 case 2:
                     notifications_1 = _a.sent();
-                    console.log("FETCHED NOTIFICATIONS: ", notifications_1);
+                    console.log("FETCHED NOTIFICATIONS: ", notifications_1, " CURRENT STATE: ", store_1.notificationStore.snapshot);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: notifications_1, loading: false, lastSync: new Date() })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:
