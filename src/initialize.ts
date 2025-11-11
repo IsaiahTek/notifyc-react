@@ -42,6 +42,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
     notificationStore.update({ ...state, isConnected: true }, "key");
   }
 
+  console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
   // Initial fetch
   fetchNotifications();
   fetchUnreadCount();

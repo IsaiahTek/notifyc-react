@@ -14,7 +14,10 @@ import { apiClient } from './initialize';
 
 
 export async function fetchNotifications(filters?: NotificationFilters) {
+  console.log("ENTERED FETCHING NOTIFICATIONS...");
   if (!apiClient) throw new Error('Call initializeNotifications() first');
+
+  console.log("FETCHING NOTIFICATIONS WITH FILTERS: ", filters);
   
   notificationStore.update((state: NotificationState) => ({ ...state, loading: true, error: null }), "key");
   

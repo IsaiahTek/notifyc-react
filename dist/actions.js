@@ -65,8 +65,10 @@ function fetchNotifications(filters) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    console.log("ENTERED FETCHING NOTIFICATIONS...");
                     if (!initialize_1.apiClient)
                         throw new Error('Call initializeNotifications() first');
+                    console.log("FETCHING NOTIFICATIONS WITH FILTERS: ", filters);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { loading: true, error: null })); }, "key");
                     _a.label = 1;
                 case 1:

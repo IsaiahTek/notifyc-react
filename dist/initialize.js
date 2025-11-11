@@ -98,6 +98,7 @@ function initializeNotifications(config, onInitialized) {
         var state = store_1.notificationStore.snapshot[0];
         store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: true }), "key");
     }
+    console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
     // Initial fetch
     (0, actions_1.fetchNotifications)();
     (0, actions_1.fetchUnreadCount)();
