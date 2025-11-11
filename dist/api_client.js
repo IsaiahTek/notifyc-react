@@ -116,7 +116,7 @@ var NotificationApiClient = /** @class */ (function () {
                     case 1:
                         notifications = _a.sent();
                         // Parse date strings to Date objects
-                        return [2 /*return*/, notifications.map(this.parseNotificationDates)];
+                        return [2 /*return*/, Array.isArray(notifications) ? notifications.map(this.parseNotificationDates) : [this.parseNotificationDates(notifications)]];
                 }
             });
         });

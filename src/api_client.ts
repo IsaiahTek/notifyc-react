@@ -57,7 +57,7 @@ export class NotificationApiClient {
     const notifications = await this.request<Notification[]>(`/notifications/${this.config.userId}${query}`);
     
     // Parse date strings to Date objects
-    return notifications.map(this.parseNotificationDates);
+    return Array.isArray(notifications) ? notifications.map(this.parseNotificationDates): [this.parseNotificationDates(notifications)];
   }
 
   async getUnreadCount(): Promise<number> {
