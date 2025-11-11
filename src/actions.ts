@@ -31,6 +31,7 @@ export async function fetchNotifications(filters?: NotificationFilters) {
       lastSync: new Date()
     }), "key");
   } catch (error) {
+    console.error('Failed to fetch notifications:', error);
     notificationStore.update((state) => ({
       ...state,
       loading: false,

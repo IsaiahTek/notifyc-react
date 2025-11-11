@@ -81,6 +81,7 @@ function fetchNotifications(filters) {
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
+                    console.error('Failed to fetch notifications:', error_1);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { loading: false, error: error_1.message })); }, "key");
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
