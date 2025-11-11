@@ -20,6 +20,7 @@ export async function fetchNotifications(filters?: NotificationFilters) {
   
   try {
     const notifications = await apiClient.getNotifications(filters);
+    console.log("GOT NOTIFICATIONS: ", notifications);
     notificationStore.update((state) => ({
       ...state,
       notifications,
@@ -40,6 +41,7 @@ export async function fetchUnreadCount() {
   
   try {
     const unreadCount = await apiClient.getUnreadCount();
+    console.log("GOT UNREAD COUNT: ", unreadCount);
     notificationStore.update((state) => ({ ...state, unreadCount }), "key");
   } catch (error) {
     console.error('Failed to fetch unread count:', error);
