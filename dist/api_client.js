@@ -96,7 +96,7 @@ var NotificationApiClient = /** @class */ (function () {
     };
     NotificationApiClient.prototype.getNotifications = function (filters) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, query, notifications;
+            var params, query, rawNotifications, notifications;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -114,7 +114,8 @@ var NotificationApiClient = /** @class */ (function () {
                         query = params.toString() ? "?".concat(params.toString()) : '';
                         return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId).concat(query))];
                     case 1:
-                        notifications = _a.sent();
+                        rawNotifications = _a.sent();
+                        notifications = this.config.dataLocator ? this.config.dataLocator(rawNotifications) : rawNotifications;
                         // Parse date strings to Date objects
                         return [2 /*return*/, Array.isArray(notifications) ? notifications.map(this.parseNotificationDates) : [this.parseNotificationDates(notifications)]];
                 }
@@ -123,13 +124,14 @@ var NotificationApiClient = /** @class */ (function () {
     };
     NotificationApiClient.prototype.getUnreadCount = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var result;
+            var rawResult, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/unread-count"))];
                     case 1:
-                        result = _a.sent();
-                        console.log("GOT UNREAD COUNT IN API: ", result.count);
+                        rawResult = _a.sent();
+                        result = this.config.dataLocator ? this.config.dataLocator(rawResult) : rawResult;
+                        console.log("GOT UNREAD COUNT IN API: ", result.count, result);
                         return [2 /*return*/, result.count];
                 }
             });

@@ -54,15 +54,18 @@ export class NotificationApiClient {
     if (filters?.offset) params.append('offset', filters.offset.toString());
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    const notifications = await this.request<Notification[]>(`/notifications/${this.config.userId}${query}`);
+    const rawNotifications = await this.request(`/notifications/${this.config.userId}${query}`);
+
+    const notifications:Notification[] = this.config.dataLocator ? this.config.dataLocator(rawNotifications) : rawNotifications;
     
     // Parse date strings to Date objects
     return Array.isArray(notifications) ? notifications.map(this.parseNotificationDates): [this.parseNotificationDates(notifications)];
   }
 
   async getUnreadCount(): Promise<number> {
-    const result = await this.request<{ count: number }>(`/notifications/${this.config.userId}/unread-count`);
-    console.log("GOT UNREAD COUNT IN API: ", result.count);
+    const rawResult = await this.request<{ count: number }>(`/notifications/${this.config.userId}/unread-count`);
+    const result = this.config.dataLocator ? this.config.dataLocator(rawResult) : rawResult;
+    console.log("GOT UNREAD COUNT IN API: ", result.count, result);
     return result.count;
   }
 

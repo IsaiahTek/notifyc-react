@@ -100,4 +100,5 @@ export interface NotificationConfig {
   wsUrl?: string;
   pollInterval?: number;
   getAuthToken?: () => Promise<string | null>;
+  dataLocator?: (response: any) => any
 }
