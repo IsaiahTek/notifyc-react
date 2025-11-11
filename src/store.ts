@@ -18,6 +18,5 @@ const initialState: NotificationState = {
   lastSync: null,
   key: "notifications"
 };
-
 // Create global store instance
 export const notificationStore = new Store<NotificationState>(initialState);
