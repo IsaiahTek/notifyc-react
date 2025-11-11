@@ -23,7 +23,7 @@ export function useNotifications(filters?: NotificationFilters) {
   
   // Filter notifications client-side if filters provided
   const filteredNotifications = filters
-    ? state.notifications.filter(n => {
+    ? state.notifications?.filter(n => {
         if (filters.status && n.status !== filters.status) return false;
         if (filters.type && n.type !== filters.type) return false;
         if (filters.category && n.category !== filters.category) return false;

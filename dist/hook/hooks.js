@@ -17,11 +17,11 @@ var react_1 = require("react");
  * Main hook for notifications with optional filtering
  */
 function useNotifications(filters) {
-    var _a;
+    var _a, _b;
     var state = (0, react_synq_store_1.useStore)(store_1.notificationStore);
     // Filter notifications client-side if filters provided
     var filteredNotifications = filters
-        ? state.notifications.filter(function (n) {
+        ? (_a = state.notifications) === null || _a === void 0 ? void 0 : _a.filter(function (n) {
             if (filters.status && n.status !== filters.status)
                 return false;
             if (filters.type && n.type !== filters.type)
@@ -35,7 +35,7 @@ function useNotifications(filters) {
         : state.notifications;
     return {
         notifications: filteredNotifications !== null && filteredNotifications !== void 0 ? filteredNotifications : [],
-        unreadCount: (_a = state.unreadCount) !== null && _a !== void 0 ? _a : 0,
+        unreadCount: (_b = state.unreadCount) !== null && _b !== void 0 ? _b : 0,
         loading: state.loading,
         error: state.error,
         isConnected: state.isConnected,
