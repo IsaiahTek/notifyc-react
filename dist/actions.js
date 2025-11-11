@@ -103,7 +103,7 @@ function fetchUnreadCount() {
                     return [4 /*yield*/, initialize_1.apiClient.getUnreadCount()];
                 case 2:
                     unreadCount_1 = _a.sent();
-                    console.log("GOT UNREAD COUNT: ", unreadCount_1);
+                    console.log("GOT UNREAD COUNT IN FETCH: ", unreadCount_1);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { unreadCount: unreadCount_1 })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:

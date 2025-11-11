@@ -53,6 +53,7 @@ export function useNotifications(filters?: NotificationFilters) {
  */
 export function useUnreadCount() {
   const data = useStore(notificationStore) as NotificationState;
+  console.log("GOT UNREAD COUNT IN HOOK: ", data.unreadCount);
   return data.unreadCount
 }
 

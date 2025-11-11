@@ -129,6 +129,7 @@ var NotificationApiClient = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/unread-count"))];
                     case 1:
                         result = _a.sent();
+                        console.log("GOT UNREAD COUNT IN API: ", result.count);
                         return [2 /*return*/, result.count];
                 }
             });

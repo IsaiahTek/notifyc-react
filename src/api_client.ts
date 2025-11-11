@@ -62,6 +62,7 @@ export class NotificationApiClient {
 
   async getUnreadCount(): Promise<number> {
     const result = await this.request<{ count: number }>(`/notifications/${this.config.userId}/unread-count`);
+    console.log("GOT UNREAD COUNT IN API: ", result.count);
     return result.count;
   }
 

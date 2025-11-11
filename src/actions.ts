@@ -45,7 +45,7 @@ export async function fetchUnreadCount() {
   
   try {
     const unreadCount = await apiClient.getUnreadCount();
-    console.log("GOT UNREAD COUNT: ", unreadCount);
+    console.log("GOT UNREAD COUNT IN FETCH: ", unreadCount);
     notificationStore.update((state) => ({ ...state, unreadCount }), "key");
   } catch (error) {
     console.error('Failed to fetch unread count:', error);
