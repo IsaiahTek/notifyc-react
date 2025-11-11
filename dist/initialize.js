@@ -67,7 +67,7 @@ function initializeNotifications(config, onInitialized) {
         exports.apiClient.connectWebSocket(function (data) {
             console.log("GOT NEW NOTIFICATION: ", data);
             if (data.type === 'notification') {
-                (0, handlers_1.addNotification)(data.notification);
+                (0, handlers_1.addNotification)(data.notifications);
             }
             else if (data.type === 'unread-count') {
                 var state_1 = store_1.notificationStore.snapshot[0];
