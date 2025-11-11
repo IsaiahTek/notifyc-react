@@ -17,4 +17,4 @@ var initialState = {
     key: "notifications"
 };
 // Create global store instance
-exports.notificationStore = new react_synq_store_1.Store([initialState]);
+exports.notificationStore = new react_synq_store_1.Store(initialState);

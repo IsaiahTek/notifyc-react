@@ -20,4 +20,4 @@ const initialState: NotificationState = {
 };
 
 // Create global store instance
-export const notificationStore = new Store<NotificationState>([initialState]);
+export const notificationStore = new Store<NotificationState>(initialState);
