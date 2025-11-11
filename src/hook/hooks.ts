@@ -33,8 +33,8 @@ export function useNotifications(filters?: NotificationFilters) {
     : state.notifications;
 
   return {
-    notifications: filteredNotifications,
-    unreadCount: state.unreadCount,
+    notifications: filteredNotifications??[],
+    unreadCount: state.unreadCount??0,
     loading: state.loading,
     error: state.error,
     isConnected: state.isConnected,

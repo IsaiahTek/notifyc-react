@@ -26,7 +26,7 @@ var store_1 = require("./store");
 // REAL-TIME HANDLERS
 // ============================================================================
 function addNotification(notification) {
-    var state = store_1.notificationStore.snapshot[0]; // or however you get current state
+    var state = store_1.notificationStore.snapshot; // or however you get current state
     var unreadCount = notification.status !== 'read'
         ? state.unreadCount + 1
         : state.unreadCount;
