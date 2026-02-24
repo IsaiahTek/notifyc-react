@@ -153,6 +153,8 @@ interface NotificationConfig {
   realtimeTransport?: 'sse' | 'websocket' | 'polling' | 'none'; // Default: 'sse'
   sseUrl?: string;             // Optional SSE base URL (defaults to apiUrl)
   ssePath?: string;            // SSE path template, default '/notifications/:userId/stream'
+  sseAuthQueryParam?: string;  // If getAuthToken exists, token query key (default: 'token')
+  sseConnectTimeoutMs?: number;// Time to wait before SSE fallback (default: 5000)
   wsUrl?: string;              // WebSocket URL (used when transport is websocket/fallback)
   pollInterval?: number;       // Polling interval (ms) fallback
   

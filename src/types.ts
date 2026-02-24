@@ -100,6 +100,8 @@ export interface NotificationConfig {
   realtimeTransport?: 'sse' | 'websocket' | 'polling' | 'none';
   sseUrl?: string;
   ssePath?: string;
+  sseAuthQueryParam?: string;
+  sseConnectTimeoutMs?: number;
   wsUrl?: string;
   pollInterval?: number;
   getAuthToken?: () => Promise<string | null>;

@@ -34,14 +34,14 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
     let connected = false;
 
     if (preferredTransport === 'sse') {
-      connected = apiClient!.connectSSE(onMessage);
+      connected = await apiClient!.connectSSE(onMessage);
       if (!connected && config.wsUrl) {
         connected = await apiClient!.connectWebSocket(onMessage);
       }
     } else if (preferredTransport === 'websocket') {
       connected = await apiClient!.connectWebSocket(onMessage);
       if (!connected) {
-        connected = apiClient!.connectSSE(onMessage);
+        connected = await apiClient!.connectSSE(onMessage);
       }
     } else if (preferredTransport === 'polling') {
       connected = false;

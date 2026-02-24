@@ -238,27 +238,77 @@ var NotificationApiClient = /** @class */ (function () {
         });
     };
     NotificationApiClient.prototype.connectSSE = function (onMessage) {
-        var _this = this;
-        var _a, _b;
-        if (typeof EventSource === 'undefined')
-            return false;
-        var base = ((_a = this.config.sseUrl) !== null && _a !== void 0 ? _a : this.config.apiUrl).replace(/\/+$/, '');
-        var configuredPath = (_b = this.config.ssePath) !== null && _b !== void 0 ? _b : '/notifications/:userId/stream';
-        var normalizedPath = configuredPath.startsWith('/') ? configuredPath : "/".concat(configuredPath);
-        var resolvedPath = normalizedPath.replace(':userId', encodeURIComponent(this.config.userId));
-        var streamUrl = "".concat(base).concat(resolvedPath);
-        this.sse = new EventSource(streamUrl, { withCredentials: true });
-        this.sse.onopen = function () {
-            console.log('🔌 SSE connected');
-            _this.reconnectAttempts = 0;
-        };
-        this.sse.addEventListener('initial-data', this.handleSSEMessage('initial-data', onMessage));
-        this.sse.addEventListener('notification', this.handleSSEMessage('notification', onMessage));
-        this.sse.addEventListener('unread-count', this.handleSSEMessage('unread-count', onMessage));
-        this.sse.onerror = function (error) {
-            console.error('❌ SSE error:', error);
-        };
-        return true;
+        return __awaiter(this, void 0, void 0, function () {
+            var base, configuredPath, normalizedPath, resolvedPath, streamUrl, token, _a;
+            var _this = this;
+            var _b, _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        if (typeof EventSource === 'undefined')
+                            return [2 /*return*/, false];
+                        base = ((_b = this.config.sseUrl) !== null && _b !== void 0 ? _b : this.config.apiUrl).replace(/\/+$/, '');
+                        configuredPath = (_c = this.config.ssePath) !== null && _c !== void 0 ? _c : '/notifications/:userId/stream';
+                        normalizedPath = configuredPath.startsWith('/') ? configuredPath : "/".concat(configuredPath);
+                        resolvedPath = normalizedPath.replace(':userId', encodeURIComponent(this.config.userId));
+                        streamUrl = new URL("".concat(base).concat(resolvedPath));
+                        if (!this.config.getAuthToken) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.config.getAuthToken()];
+                    case 1:
+                        _a = _e.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        _a = null;
+                        _e.label = 3;
+                    case 3:
+                        token = _a;
+                        if (token) {
+                            streamUrl.searchParams.set((_d = this.config.sseAuthQueryParam) !== null && _d !== void 0 ? _d : 'token', token);
+                        }
+                        return [2 /*return*/, new Promise(function (resolve) {
+                                var _a;
+                                var settled = false;
+                                var opened = false;
+                                var connectTimeoutMs = (_a = _this.config.sseConnectTimeoutMs) !== null && _a !== void 0 ? _a : 5000;
+                                var settle = function (value) {
+                                    if (settled)
+                                        return;
+                                    settled = true;
+                                    resolve(value);
+                                };
+                                _this.sse = new EventSource(streamUrl.toString(), { withCredentials: true });
+                                _this.sse.addEventListener('initial-data', _this.handleSSEMessage('initial-data', onMessage));
+                                _this.sse.addEventListener('notification', _this.handleSSEMessage('notification', onMessage));
+                                _this.sse.addEventListener('unread-count', _this.handleSSEMessage('unread-count', onMessage));
+                                var timeout = setTimeout(function () {
+                                    var _a;
+                                    if (!opened) {
+                                        (_a = _this.sse) === null || _a === void 0 ? void 0 : _a.close();
+                                        _this.sse = undefined;
+                                        settle(false);
+                                    }
+                                }, connectTimeoutMs);
+                                _this.sse.onopen = function () {
+                                    clearTimeout(timeout);
+                                    opened = true;
+                                    _this.reconnectAttempts = 0;
+                                    console.log('🔌 SSE connected');
+                                    settle(true);
+                                };
+                                _this.sse.onerror = function (error) {
+                                    var _a;
+                                    console.error('❌ SSE error:', error);
+                                    if (!opened) {
+                                        clearTimeout(timeout);
+                                        (_a = _this.sse) === null || _a === void 0 ? void 0 : _a.close();
+                                        _this.sse = undefined;
+                                        settle(false);
+                                    }
+                                };
+                            })];
+                }
+            });
+        });
     };
     NotificationApiClient.prototype.connectWebSocket = function (onMessage) {
         return __awaiter(this, void 0, void 0, function () {

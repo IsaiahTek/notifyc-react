@@ -102,28 +102,61 @@ export class NotificationApiClient {
     });
   }
 
-  connectSSE(onMessage: (data: any) => void): boolean {
+  async connectSSE(onMessage: (data: any) => void): Promise<boolean> {
     if (typeof EventSource === 'undefined') return false;
 
     const base = (this.config.sseUrl ?? this.config.apiUrl).replace(/\/+$/, '');
     const configuredPath = this.config.ssePath ?? '/notifications/:userId/stream';
     const normalizedPath = configuredPath.startsWith('/') ? configuredPath : `/${configuredPath}`;
     const resolvedPath = normalizedPath.replace(':userId', encodeURIComponent(this.config.userId));
-    const streamUrl = `${base}${resolvedPath}`;
+    const streamUrl = new URL(`${base}${resolvedPath}`);
+    const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
+    if (token) {
+      streamUrl.searchParams.set(this.config.sseAuthQueryParam ?? 'token', token);
+    }
 
-    this.sse = new EventSource(streamUrl, { withCredentials: true });
-    this.sse.onopen = () => {
-      console.log('🔌 SSE connected');
-      this.reconnectAttempts = 0;
-    };
-    this.sse.addEventListener('initial-data', this.handleSSEMessage('initial-data', onMessage));
-    this.sse.addEventListener('notification', this.handleSSEMessage('notification', onMessage));
-    this.sse.addEventListener('unread-count', this.handleSSEMessage('unread-count', onMessage));
-    this.sse.onerror = (error) => {
-      console.error('❌ SSE error:', error);
-    };
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      let opened = false;
+      const connectTimeoutMs = this.config.sseConnectTimeoutMs ?? 5000;
 
-    return true;
+      const settle = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+
+      this.sse = new EventSource(streamUrl.toString(), { withCredentials: true });
+      this.sse.addEventListener('initial-data', this.handleSSEMessage('initial-data', onMessage));
+      this.sse.addEventListener('notification', this.handleSSEMessage('notification', onMessage));
+      this.sse.addEventListener('unread-count', this.handleSSEMessage('unread-count', onMessage));
+
+      const timeout = setTimeout(() => {
+        if (!opened) {
+          this.sse?.close();
+          this.sse = undefined;
+          settle(false);
+        }
+      }, connectTimeoutMs);
+
+      this.sse.onopen = () => {
+        clearTimeout(timeout);
+        opened = true;
+        this.reconnectAttempts = 0;
+        console.log('🔌 SSE connected');
+        settle(true);
+      };
+
+      this.sse.onerror = (error) => {
+        console.error('❌ SSE error:', error);
+        if (!opened) {
+          clearTimeout(timeout);
+          this.sse?.close();
+          this.sse = undefined;
+          settle(false);
+        }
+      };
+    });
   }
 
   async connectWebSocket(onMessage: (data: any) => void): Promise<boolean> {
