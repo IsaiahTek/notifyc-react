@@ -54,7 +54,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
   };
 
   const onMessage = (data: any, isSSE: boolean = false) => {
-    console.log(`GOT NEW "${data.type}" NOTIFICATION: `, data)
+    // console.log(`GOT NEW "${data.type}" NOTIFICATION: `, data)
     if (data.type === 'notification') {
       addNotification(isSSE ? data.data : data.notification);
     } else if (data.type === 'unread-count') {
@@ -138,7 +138,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
 
   void connectRealtime();
 
-  console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
+  // console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
   // Initial fetch
   fetchNotifications();
   fetchUnreadCount();

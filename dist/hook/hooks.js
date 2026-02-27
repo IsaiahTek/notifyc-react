@@ -55,7 +55,7 @@ function useNotifications(filters) {
  */
 function useUnreadCount() {
     var data = (0, react_synq_store_1.useStore)(store_1.notificationStore);
-    console.log("GOT UNREAD COUNT IN HOOK: ", data.unreadCount);
+    // console.log("GOT UNREAD COUNT IN HOOK: ", data.unreadCount);
     return data.unreadCount;
 }
 /**

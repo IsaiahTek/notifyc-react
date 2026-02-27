@@ -453,7 +453,6 @@ var NotificationApiClient = /** @class */ (function () {
                         return [3 /*break*/, 3];
                     case 2:
                         err_1 = _a.sent();
-                        console.error('[notifyc] Polling error:', err_1);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }

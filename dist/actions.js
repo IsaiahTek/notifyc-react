@@ -67,10 +67,10 @@ function fetchNotifications(filters) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.log("ENTERED FETCHING NOTIFICATIONS...");
+                    // console.log("ENTERED FETCHING NOTIFICATIONS...");
                     if (!initialize_1.apiClient)
                         throw new Error('Call initializeNotifications() first');
-                    console.log("FETCHING NOTIFICATIONS WITH FILTERS: ", filters);
+                    // console.log("FETCHING NOTIFICATIONS WITH FILTERS: ", filters);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { loading: true, error: null })); }, "key");
                     _a.label = 1;
                 case 1:
@@ -78,12 +78,12 @@ function fetchNotifications(filters) {
                     return [4 /*yield*/, initialize_1.apiClient.getNotifications(filters)];
                 case 2:
                     notifications_1 = _a.sent();
-                    console.log("FETCHED NOTIFICATIONS: ", notifications_1, " CURRENT STATE: ", store_1.notificationStore.snapshot);
+                    // console.log("FETCHED NOTIFICATIONS: ", notifications, " CURRENT STATE: ", notificationStore.snapshot);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: notifications_1, loading: false, lastSync: new Date() })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
-                    console.error('Failed to fetch notifications:', error_1);
+                    // console.error('Failed to fetch notifications:', error);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { loading: false, error: error_1.message })); }, "key");
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
@@ -105,12 +105,11 @@ function fetchUnreadCount() {
                     return [4 /*yield*/, initialize_1.apiClient.getUnreadCount()];
                 case 2:
                     unreadCount_1 = _a.sent();
-                    console.log("GOT UNREAD COUNT IN FETCH: ", unreadCount_1);
+                    // console.log("GOT UNREAD COUNT IN FETCH: ", unreadCount);
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { unreadCount: unreadCount_1 })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:
                     error_2 = _a.sent();
-                    console.error('Failed to fetch unread count:', error_2);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -135,7 +134,6 @@ function fetchStats() {
                     return [3 /*break*/, 4];
                 case 3:
                     error_3 = _a.sent();
-                    console.error('Failed to fetch stats:', error_3);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -160,7 +158,6 @@ function fetchPreferences() {
                     return [3 /*break*/, 4];
                 case 3:
                     error_4 = _a.sent();
-                    console.error('Failed to fetch preferences:', error_4);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -191,7 +188,6 @@ function markAsRead(notificationId) {
                     return [3 /*break*/, 5];
                 case 4:
                     error_5 = _a.sent();
-                    console.error('Failed to mark as read:', error_5);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -216,7 +212,6 @@ function markAllAsRead() {
                     return [3 /*break*/, 4];
                 case 3:
                     error_6 = _a.sent();
-                    console.error('Failed to mark all as read:', error_6);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -247,7 +242,6 @@ function markAsUnread(notificationId) {
                     return [3 /*break*/, 5];
                 case 4:
                     error_7 = _a.sent();
-                    console.error('Failed to mark as unread:', error_7);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -272,7 +266,6 @@ function markAllAsUnread() {
                     return [3 /*break*/, 4];
                 case 3:
                     error_8 = _a.sent();
-                    console.error('Failed to mark all as unread:', error_8);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -300,7 +293,6 @@ function deleteNotification(notificationId) {
                     return [3 /*break*/, 5];
                 case 4:
                     error_9 = _a.sent();
-                    console.error('Failed to delete notification:', error_9);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -325,7 +317,6 @@ function deleteAll() {
                     return [3 /*break*/, 4];
                 case 3:
                     error_10 = _a.sent();
-                    console.error('Failed to delete all:', error_10);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -350,7 +341,6 @@ function updatePreferences(prefs) {
                     return [3 /*break*/, 4];
                 case 3:
                     error_11 = _a.sent();
-                    console.error('Failed to update preferences:', error_11);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }

@@ -89,7 +89,7 @@ function initializeNotifications(config, onInitialized) {
     };
     var onMessage = function (data, isSSE) {
         if (isSSE === void 0) { isSSE = false; }
-        console.log("GOT NEW \"".concat(data.type, "\" NOTIFICATION: "), data);
+        // console.log(`GOT NEW "${data.type}" NOTIFICATION: `, data)
         if (data.type === 'notification') {
             (0, handlers_1.addNotification)(isSSE ? data.data : data.notification);
         }
@@ -204,7 +204,7 @@ function initializeNotifications(config, onInitialized) {
         });
     }); };
     void connectRealtime();
-    console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
+    // console.log("ABOUT TO CALL NOTIFICATION ACTIONS");
     // Initial fetch
     (0, actions_1.fetchNotifications)();
     (0, actions_1.fetchUnreadCount)();
