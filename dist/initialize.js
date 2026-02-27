@@ -99,7 +99,7 @@ function initializeNotifications(config, onInitialized) {
         }
         else if (data.type === 'initial-data') {
             var state = getState();
-            store_1.notificationStore.update(__assign(__assign({}, state), { notifications: isSSE ? data.data.notifications : data.notifications, unreadCount: isSSE ? data.data.unreadCount : data.unreadCount, isConnected: true }), "key");
+            store_1.notificationStore.update(__assign(__assign({}, state), { notifications: isSSE ? data.data : data.notifications, unreadCount: isSSE ? data.data.unreadCount : data.unreadCount, isConnected: true }), "key");
         }
     };
     var connectRealtime = function () { return __awaiter(_this, void 0, void 0, function () {

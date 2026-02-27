@@ -198,7 +198,7 @@ export class NotificationApiClient {
      SERVER-SENT EVENTS
   ============================================================ */
 
-  async connectSSE(onMessage: (data: any) => void): Promise<boolean> {
+  async connectSSE(onMessage: (data: any, isSSE: boolean) => void): Promise<boolean> {
     if (typeof EventSource === 'undefined') return false;
     if (this.ssePromise) return this.ssePromise;
 
@@ -256,9 +256,9 @@ export class NotificationApiClient {
 
       this.sse.onmessage = (event) => {
         try {
-          onMessage(JSON.parse(event.data));
+          onMessage(JSON.parse(event.data as string), true);
         } catch {
-          onMessage(event.data);
+          onMessage(event.data, true);
         }
       };
 
