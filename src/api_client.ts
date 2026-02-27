@@ -39,27 +39,29 @@ export class NotificationApiClient {
       : null;
 
     // Normalize headers safely
-    const mergedHeaders: Record<string, string> = {
+    const baseHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
     if (token) {
-      mergedHeaders['Authorization'] = `Bearer ${token}`;
+      baseHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    if (options.headers) {
-      if (options.headers instanceof Headers) {
-        options.headers.forEach((value, key) => {
-          mergedHeaders[key] = value;
-        });
-      } else if (Array.isArray(options.headers)) {
-        options.headers.forEach(([key, value]) => {
-          mergedHeaders[key] = value;
-        });
-      } else {
-        Object.assign(mergedHeaders, options.headers);
-      }
+    let optionsHeaders: Record<string, string> = {};
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        optionsHeaders[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      optionsHeaders = Object.fromEntries(options.headers);
+    } else if (options.headers) {
+      optionsHeaders = options.headers as Record<string, string>;
     }
+
+    const mergedHeaders: Record<string, string> = {
+      ...baseHeaders,
+      ...optionsHeaders,
+    };
 
     const response = await fetch(`${this.config.apiUrl}${endpoint}`, {
       ...options,
@@ -236,12 +238,12 @@ export class NotificationApiClient {
       };
 
       try {
-        const base = this.config.wsUrl ?? this.config.apiUrl;
+        const base = (this.config.wsUrl ?? this.config.apiUrl).replace(/\/+$/, '');
         const token = this.config.getAuthToken
           ? await this.config.getAuthToken()
           : null;
 
-        const wsUrl = new URL(base.replace(/^http/, 'ws'));
+        const wsUrl = new URL(`${base}/notifications`.replace(/^http/, 'ws'));
         wsUrl.searchParams.set('userId', this.config.userId);
         if (token) wsUrl.searchParams.set('token', token);
 

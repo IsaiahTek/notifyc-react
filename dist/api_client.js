@@ -60,7 +60,7 @@ var NotificationApiClient = /** @class */ (function () {
     ============================================================ */
     NotificationApiClient.prototype.request = function (endpoint_1) {
         return __awaiter(this, arguments, void 0, function (endpoint, options, isRetry) {
-            var token, _a, mergedHeaders, response, newToken, _b, retryHeaders, errorText, contentType;
+            var token, _a, baseHeaders, optionsHeaders, mergedHeaders, response, newToken, _b, retryHeaders, errorText, contentType;
             var _c, _d;
             if (options === void 0) { options = {}; }
             if (isRetry === void 0) { isRetry = false; }
@@ -77,28 +77,25 @@ var NotificationApiClient = /** @class */ (function () {
                         _e.label = 3;
                     case 3:
                         token = _a;
-                        mergedHeaders = {
+                        baseHeaders = {
                             'Content-Type': 'application/json',
                         };
                         if (token) {
-                            mergedHeaders['Authorization'] = "Bearer ".concat(token);
+                            baseHeaders['Authorization'] = "Bearer ".concat(token);
                         }
-                        if (options.headers) {
-                            if (options.headers instanceof Headers) {
-                                options.headers.forEach(function (value, key) {
-                                    mergedHeaders[key] = value;
-                                });
-                            }
-                            else if (Array.isArray(options.headers)) {
-                                options.headers.forEach(function (_a) {
-                                    var key = _a[0], value = _a[1];
-                                    mergedHeaders[key] = value;
-                                });
-                            }
-                            else {
-                                Object.assign(mergedHeaders, options.headers);
-                            }
+                        optionsHeaders = {};
+                        if (options.headers instanceof Headers) {
+                            options.headers.forEach(function (value, key) {
+                                optionsHeaders[key] = value;
+                            });
                         }
+                        else if (Array.isArray(options.headers)) {
+                            optionsHeaders = Object.fromEntries(options.headers);
+                        }
+                        else if (options.headers) {
+                            optionsHeaders = options.headers;
+                        }
+                        mergedHeaders = __assign(__assign({}, baseHeaders), optionsHeaders);
                         return [4 /*yield*/, fetch("".concat(this.config.apiUrl).concat(endpoint), __assign(__assign({}, options), { credentials: 'include', headers: mergedHeaders }))];
                     case 4:
                         response = _e.sent();
@@ -358,7 +355,7 @@ var NotificationApiClient = /** @class */ (function () {
                                 _d.label = 1;
                             case 1:
                                 _d.trys.push([1, 5, , 6]);
-                                base = (_c = this.config.wsUrl) !== null && _c !== void 0 ? _c : this.config.apiUrl;
+                                base = ((_c = this.config.wsUrl) !== null && _c !== void 0 ? _c : this.config.apiUrl).replace(/\/+$/, '');
                                 if (!this.config.getAuthToken) return [3 /*break*/, 3];
                                 return [4 /*yield*/, this.config.getAuthToken()];
                             case 2:
@@ -369,7 +366,7 @@ var NotificationApiClient = /** @class */ (function () {
                                 _d.label = 4;
                             case 4:
                                 token = _a;
-                                wsUrl = new URL(base.replace(/^http/, 'ws'));
+                                wsUrl = new URL("".concat(base, "/notifications").replace(/^http/, 'ws'));
                                 wsUrl.searchParams.set('userId', this.config.userId);
                                 if (token)
                                     wsUrl.searchParams.set('token', token);

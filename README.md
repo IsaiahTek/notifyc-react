@@ -270,14 +270,6 @@ const realtime = useNotificationRealtime();
 // }
 ```
 
-#### useNotificationConnection()
-
-Check if the client is currently connected to the realtime server:
-
-```typescript
-const isConnected: boolean = useNotificationConnection();
-```
-
 #### useNotification()
 
 Get single notification by ID:
@@ -305,7 +297,6 @@ import {
 } from 'notifyc-react';
 
 // Call from anywhere - no hooks needed!
-await fetchNotifications(); // manual refresh
 await markAsRead('notif_123');
 await markAllAsRead();
 await markAsUnread('notif_123');
