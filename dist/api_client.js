@@ -158,7 +158,7 @@ var NotificationApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/").concat(notificationId, "/read"), { method: 'POST' })];
+                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/").concat(notificationId, "/read"), { method: 'PATCH' })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -170,7 +170,31 @@ var NotificationApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/read-all"), { method: 'POST' })];
+                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/read-all"), { method: 'PATCH' })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NotificationApiClient.prototype.markAsUnread = function (notificationId) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/").concat(notificationId, "/unread"), { method: 'PATCH' })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    NotificationApiClient.prototype.markAllAsUnread = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.request("/notifications/".concat(this.config.userId, "/unread-all"), { method: 'PATCH' })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];

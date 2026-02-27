@@ -98,11 +98,19 @@ export class NotificationApiClient {
   }
 
   async markAsRead(notificationId: string): Promise<void> {
-    await this.request(`/notifications/${this.config.userId}/${notificationId}/read`, { method: 'POST' });
+    await this.request(`/notifications/${this.config.userId}/${notificationId}/read`, { method: 'PATCH' });
   }
 
   async markAllAsRead(): Promise<void> {
-    await this.request(`/notifications/${this.config.userId}/read-all`, { method: 'POST' });
+    await this.request(`/notifications/${this.config.userId}/read-all`, { method: 'PATCH' });
+  }
+
+  async markAsUnread(notificationId: string): Promise<void> {
+    await this.request(`/notifications/${this.config.userId}/${notificationId}/unread`, { method: 'PATCH' });
+  }
+
+  async markAllAsUnread(): Promise<void> {
+    await this.request(`/notifications/${this.config.userId}/unread-all`, { method: 'PATCH' });
   }
 
   async deleteNotification(notificationId: string): Promise<void> {

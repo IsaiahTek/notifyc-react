@@ -53,6 +53,8 @@ exports.fetchStats = fetchStats;
 exports.fetchPreferences = fetchPreferences;
 exports.markAsRead = markAsRead;
 exports.markAllAsRead = markAllAsRead;
+exports.markAsUnread = markAsUnread;
+exports.markAllAsUnread = markAllAsUnread;
 exports.deleteNotification = deleteNotification;
 exports.deleteAll = deleteAll;
 exports.updatePreferences = updatePreferences;
@@ -221,9 +223,65 @@ function markAllAsRead() {
         });
     });
 }
-function deleteNotification(notificationId) {
+function markAsUnread(notificationId) {
     return __awaiter(this, void 0, void 0, function () {
         var error_7;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!initialize_1.apiClient)
+                        return [2 /*return*/];
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, initialize_1.apiClient.markAsUnread(notificationId)];
+                case 2:
+                    _a.sent();
+                    store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: state.notifications.map(function (n) {
+                            return n.id === notificationId
+                                ? __assign(__assign({}, n), { status: 'delivered', readAt: undefined }) : n;
+                        }) })); }, "key");
+                    return [4 /*yield*/, fetchUnreadCount()];
+                case 3:
+                    _a.sent();
+                    return [3 /*break*/, 5];
+                case 4:
+                    error_7 = _a.sent();
+                    console.error('Failed to mark as unread:', error_7);
+                    return [3 /*break*/, 5];
+                case 5: return [2 /*return*/];
+            }
+        });
+    });
+}
+function markAllAsUnread() {
+    return __awaiter(this, void 0, void 0, function () {
+        var error_8;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!initialize_1.apiClient)
+                        return [2 /*return*/];
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, initialize_1.apiClient.markAllAsUnread()];
+                case 2:
+                    _a.sent();
+                    store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: state.notifications.map(function (n) { return (__assign(__assign({}, n), { status: 'delivered', readAt: undefined })); }), unreadCount: state.notifications.length })); }, "key");
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_8 = _a.sent();
+                    console.error('Failed to mark all as unread:', error_8);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function deleteNotification(notificationId) {
+    return __awaiter(this, void 0, void 0, function () {
+        var error_9;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -241,8 +299,8 @@ function deleteNotification(notificationId) {
                     _a.sent();
                     return [3 /*break*/, 5];
                 case 4:
-                    error_7 = _a.sent();
-                    console.error('Failed to delete notification:', error_7);
+                    error_9 = _a.sent();
+                    console.error('Failed to delete notification:', error_9);
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
             }
@@ -251,7 +309,7 @@ function deleteNotification(notificationId) {
 }
 function deleteAll() {
     return __awaiter(this, void 0, void 0, function () {
-        var error_8;
+        var error_10;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -266,8 +324,8 @@ function deleteAll() {
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { notifications: [], unreadCount: 0 })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:
-                    error_8 = _a.sent();
-                    console.error('Failed to delete all:', error_8);
+                    error_10 = _a.sent();
+                    console.error('Failed to delete all:', error_10);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }
@@ -276,7 +334,7 @@ function deleteAll() {
 }
 function updatePreferences(prefs) {
     return __awaiter(this, void 0, void 0, function () {
-        var error_9;
+        var error_11;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -291,8 +349,8 @@ function updatePreferences(prefs) {
                     store_1.notificationStore.update(function (state) { return (__assign(__assign({}, state), { preferences: state.preferences ? __assign(__assign({}, state.preferences), prefs) : null })); }, "key");
                     return [3 /*break*/, 4];
                 case 3:
-                    error_9 = _a.sent();
-                    console.error('Failed to update preferences:', error_9);
+                    error_11 = _a.sent();
+                    console.error('Failed to update preferences:', error_11);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/];
             }

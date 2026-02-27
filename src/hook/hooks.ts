@@ -4,7 +4,7 @@
 
 import { useStore } from 'react-synq-store';
 
-import { markAsRead, markAllAsRead, deleteNotification, deleteAll, fetchNotifications, fetchStats, updatePreferences } from '../actions';
+import { markAsRead, markAllAsRead, deleteNotification, deleteAll, fetchNotifications, fetchStats, updatePreferences, markAsUnread, markAllAsUnread } from '../actions';
 
 import { notificationStore } from '../store';
 
@@ -42,6 +42,8 @@ export function useNotifications(filters?: NotificationFilters) {
     // Actions
     markAsRead,
     markAllAsRead,
+    markAsUnread,
+    markAllAsUnread,
     deleteNotification,
     deleteAll,
     refresh: fetchNotifications

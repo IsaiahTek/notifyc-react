@@ -1,4 +1,4 @@
-import { markAsRead, markAllAsRead, deleteNotification, deleteAll, fetchNotifications, updatePreferences } from '../actions';
+import { markAsRead, markAllAsRead, deleteNotification, deleteAll, fetchNotifications, updatePreferences, markAsUnread, markAllAsUnread } from '../actions';
 import { NotificationFilters, NotificationState } from '../types';
 /**
  * Main hook for notifications with optional filtering
@@ -11,6 +11,8 @@ export declare function useNotifications(filters?: NotificationFilters): {
     isConnected: boolean;
     markAsRead: typeof markAsRead;
     markAllAsRead: typeof markAllAsRead;
+    markAsUnread: typeof markAsUnread;
+    markAllAsUnread: typeof markAllAsUnread;
     deleteNotification: typeof deleteNotification;
     deleteAll: typeof deleteAll;
     refresh: typeof fetchNotifications;

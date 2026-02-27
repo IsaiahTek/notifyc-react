@@ -115,6 +115,47 @@ export async function markAllAsRead() {
   }
 }
 
+export async function markAsUnread(notificationId: string) {
+  if (!apiClient) return;
+  
+  try {
+    await apiClient.markAsUnread(notificationId);
+    
+    notificationStore.update((state) => ({
+      ...state,
+      notifications: state.notifications.map(n =>
+        n.id === notificationId
+          ? { ...n, status: 'delivered' as const, readAt: undefined }
+          : n
+      )
+    }), "key");
+    
+    await fetchUnreadCount();
+  } catch (error) {
+    console.error('Failed to mark as unread:', error);
+  }
+}
+
+export async function markAllAsUnread() {
+  if (!apiClient) return;
+  
+  try {
+    await apiClient.markAllAsUnread();
+    
+    notificationStore.update((state) => ({
+      ...state,
+      notifications: state.notifications.map(n => ({
+        ...n,
+        status: 'delivered' as const,
+        readAt: undefined
+      })),
+      unreadCount: state.notifications.length
+    }), "key");
+  } catch (error) {
+    console.error('Failed to mark all as unread:', error);
+  }
+}
+
 export async function deleteNotification(notificationId: string) {
   if (!apiClient) return;
   

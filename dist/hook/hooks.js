@@ -43,6 +43,8 @@ function useNotifications(filters) {
         // Actions
         markAsRead: actions_1.markAsRead,
         markAllAsRead: actions_1.markAllAsRead,
+        markAsUnread: actions_1.markAsUnread,
+        markAllAsUnread: actions_1.markAllAsUnread,
         deleteNotification: actions_1.deleteNotification,
         deleteAll: actions_1.deleteAll,
         refresh: actions_1.fetchNotifications

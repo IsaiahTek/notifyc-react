@@ -16,6 +16,8 @@ export declare class NotificationApiClient {
     getPreferences(): Promise<NotificationPreferences>;
     markAsRead(notificationId: string): Promise<void>;
     markAllAsRead(): Promise<void>;
+    markAsUnread(notificationId: string): Promise<void>;
+    markAllAsUnread(): Promise<void>;
     deleteNotification(notificationId: string): Promise<void>;
     deleteAll(): Promise<void>;
     updatePreferences(prefs: Partial<NotificationPreferences>): Promise<void>;
