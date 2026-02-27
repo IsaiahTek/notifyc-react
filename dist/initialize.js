@@ -88,7 +88,8 @@ function initializeNotifications(config, onInitialized) {
         store_1.notificationStore.update(__assign(__assign({}, state), { realtime: realtime }), "key");
     };
     var onMessage = function (data) {
-        console.log("GOT NEW NOTIFICATION: ", data);
+        var _a;
+        console.log("GOT NEW ".concat((_a = data.type) === null || _a === void 0 ? void 0 : _a.toUpperCase(), " NOTIFICATION: "), data);
         if (data.type === 'notification') {
             (0, handlers_1.addNotification)(data.notification);
         }

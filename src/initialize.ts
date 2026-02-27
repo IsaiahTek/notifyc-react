@@ -54,7 +54,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
   };
 
   const onMessage = (data: any) => {
-    console.log("GOT NEW NOTIFICATION: ", data)
+    console.log(`GOT NEW ${data.type?.toUpperCase()} NOTIFICATION: `, data)
     if (data.type === 'notification') {
       addNotification(data.notification);
     } else if (data.type === 'unread-count') {
