@@ -6,7 +6,8 @@ Complete guide for using Synq Notifications in React with **react-synq-store** (
 
 Unlike traditional React state management, `react-synq-store` doesn't require wrapping your app in a provider. Just initialize once and use anywhere! Perfect for:
 
-- ✅ **Global Toast Notifications** (like your example)
+- ✅ **Global Toast Notifications**
+- ✅ **Web (System Tray) Notifications**
 - ✅ **Notification Badges** (in headers, sidebars, anywhere)
 - ✅ **Notification Centers** (dropdowns, panels)
 - ✅ **Cross-App State** (shared across different parts of your app)
@@ -54,7 +55,37 @@ export default function RootLayout({ children }) {
   );
 }
 ```
-
+```tsx
+    // Now you can just initialize once and use anywhere!
+    initializeNotifications({
+      config: {
+        apiUrl,
+        userId: user.id,
+        wsUrl,
+        pollInterval: isWebSocketMode ? undefined : pollInterval,
+        getAuthToken: async () => authToken,
+        dataLocator: locateNotificationData,
+        debug: true,
+        realtimeTransport: "sse",
+        onDebugEvent: (e) => {
+          console.log("notifyc-debug-" + section, e);
+          try {
+            setLastDebugEvent(typeof e === "string" ? e : JSON.stringify(e));
+          } catch {
+            setLastDebugEvent("debug event");
+          }
+        },
+      },
+      onNotification: (notification) => {
+        console.log("notifyc-notification-" + section, notification);
+        createToast({
+          title: notification.title,
+          messages: [notification.body],
+          type: 'info',
+        });
+      },
+    });
+```
 ### Step 2: Use Anywhere
 
 **In your header:**

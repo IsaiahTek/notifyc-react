@@ -29,34 +29,92 @@ export class NotificationApiClient {
   /* ============================================================
      HTTP REQUESTS
   ============================================================ */
-  private async request<T>(endpoint: string, options: RequestInit = {}, isRetry: boolean = false): Promise<T> {
-    const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    isRetry: boolean = false
+  ): Promise<T> {
+    const token = this.config.getAuthToken
+      ? await this.config.getAuthToken()
+      : null;
+
+    // Normalize headers safely
+    const mergedHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      mergedHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          mergedHeaders[key] = value;
+        });
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          mergedHeaders[key] = value;
+        });
+      } else {
+        Object.assign(mergedHeaders, options.headers);
+      }
+    }
 
     const response = await fetch(`${this.config.apiUrl}${endpoint}`, {
       ...options,
-      credentials: 'include', // Ensure cookies are sent for session-based auth
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers
-      }
+      credentials: 'include',
+      headers: mergedHeaders,
     });
 
+    // 🔁 Handle 401 retry
     if (response.status === 401 && !isRetry) {
       await this.config.onRefreshAuth?.();
-      const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
-      options.headers = {
-        ...options.headers,
-        ...(token && { Authorization: `Bearer ${token}` })
+
+      const newToken = this.config.getAuthToken
+        ? await this.config.getAuthToken()
+        : null;
+
+      const retryHeaders: Record<string, string> = {
+        ...mergedHeaders,
       };
-      return await this.request<T>(endpoint, options, true);
+
+      if (newToken) {
+        retryHeaders['Authorization'] = `Bearer ${newToken}`;
+      } else {
+        delete retryHeaders['Authorization'];
+      }
+
+      return this.request<T>(
+        endpoint,
+        {
+          ...options,
+          headers: retryHeaders,
+        },
+        true
+      );
     }
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `API Error ${response.status}: ${errorText || response.statusText}`
+      );
     }
 
-    return response.json();
+    // ✅ Handle empty responses safely
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const contentType = response.headers.get('content-type');
+
+    if (contentType?.includes('application/json')) {
+      return response.json();
+    }
+
+    // fallback (text, etc.)
+    return (await response.text()) as unknown as T;
   }
 
   /* ============================================================

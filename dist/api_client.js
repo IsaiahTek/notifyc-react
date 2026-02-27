@@ -60,7 +60,7 @@ var NotificationApiClient = /** @class */ (function () {
     ============================================================ */
     NotificationApiClient.prototype.request = function (endpoint_1) {
         return __awaiter(this, arguments, void 0, function (endpoint, options, isRetry) {
-            var token, _a, response, token_1, _b;
+            var token, _a, mergedHeaders, response, newToken, _b, retryHeaders, errorText, contentType;
             var _c, _d;
             if (options === void 0) { options = {}; }
             if (isRetry === void 0) { isRetry = false; }
@@ -77,10 +77,32 @@ var NotificationApiClient = /** @class */ (function () {
                         _e.label = 3;
                     case 3:
                         token = _a;
-                        return [4 /*yield*/, fetch("".concat(this.config.apiUrl).concat(endpoint), __assign(__assign({}, options), { credentials: 'include', headers: __assign(__assign({ 'Content-Type': 'application/json' }, (token && { Authorization: "Bearer ".concat(token) })), options.headers) }))];
+                        mergedHeaders = {
+                            'Content-Type': 'application/json',
+                        };
+                        if (token) {
+                            mergedHeaders['Authorization'] = "Bearer ".concat(token);
+                        }
+                        if (options.headers) {
+                            if (options.headers instanceof Headers) {
+                                options.headers.forEach(function (value, key) {
+                                    mergedHeaders[key] = value;
+                                });
+                            }
+                            else if (Array.isArray(options.headers)) {
+                                options.headers.forEach(function (_a) {
+                                    var key = _a[0], value = _a[1];
+                                    mergedHeaders[key] = value;
+                                });
+                            }
+                            else {
+                                Object.assign(mergedHeaders, options.headers);
+                            }
+                        }
+                        return [4 /*yield*/, fetch("".concat(this.config.apiUrl).concat(endpoint), __assign(__assign({}, options), { credentials: 'include', headers: mergedHeaders }))];
                     case 4:
                         response = _e.sent();
-                        if (!(response.status === 401 && !isRetry)) return [3 /*break*/, 10];
+                        if (!(response.status === 401 && !isRetry)) return [3 /*break*/, 9];
                         return [4 /*yield*/, ((_d = (_c = this.config).onRefreshAuth) === null || _d === void 0 ? void 0 : _d.call(_c))];
                     case 5:
                         _e.sent();
@@ -93,15 +115,34 @@ var NotificationApiClient = /** @class */ (function () {
                         _b = null;
                         _e.label = 8;
                     case 8:
-                        token_1 = _b;
-                        options.headers = __assign(__assign({}, options.headers), (token_1 && { Authorization: "Bearer ".concat(token_1) }));
-                        return [4 /*yield*/, this.request(endpoint, options, true)];
-                    case 9: return [2 /*return*/, _e.sent()];
-                    case 10:
-                        if (!response.ok) {
-                            throw new Error("API Error: ".concat(response.statusText));
+                        newToken = _b;
+                        retryHeaders = __assign({}, mergedHeaders);
+                        if (newToken) {
+                            retryHeaders['Authorization'] = "Bearer ".concat(newToken);
                         }
-                        return [2 /*return*/, response.json()];
+                        else {
+                            delete retryHeaders['Authorization'];
+                        }
+                        return [2 /*return*/, this.request(endpoint, __assign(__assign({}, options), { headers: retryHeaders }), true)];
+                    case 9:
+                        if (!!response.ok) return [3 /*break*/, 11];
+                        return [4 /*yield*/, response.text().catch(function () { return ''; })];
+                    case 10:
+                        errorText = _e.sent();
+                        throw new Error("API Error ".concat(response.status, ": ").concat(errorText || response.statusText));
+                    case 11:
+                        // ✅ Handle empty responses safely
+                        if (response.status === 204) {
+                            return [2 /*return*/, undefined];
+                        }
+                        contentType = response.headers.get('content-type');
+                        if (contentType === null || contentType === void 0 ? void 0 : contentType.includes('application/json')) {
+                            return [2 /*return*/, response.json()];
+                        }
+                        return [4 /*yield*/, response.text()];
+                    case 12: 
+                    // fallback (text, etc.)
+                    return [2 /*return*/, (_e.sent())];
                 }
             });
         });
