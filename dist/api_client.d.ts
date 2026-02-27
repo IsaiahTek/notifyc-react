@@ -4,12 +4,12 @@ export declare class NotificationApiClient {
     private config;
     private ws?;
     private sse?;
-    private pollInterval?;
-    private reconnectAttempts;
-    private maxReconnectAttempts;
+    private wsPromise?;
+    private ssePromise?;
+    private pollingIntervalId?;
     constructor(config: NotificationConfig);
-    private emitDebug;
     private request;
+    private parseNotificationDates;
     getNotifications(filters?: NotificationFilters): Promise<Notification[]>;
     getUnreadCount(): Promise<number>;
     getStats(): Promise<NotificationStats>;
@@ -19,13 +19,10 @@ export declare class NotificationApiClient {
     deleteNotification(notificationId: string): Promise<void>;
     deleteAll(): Promise<void>;
     updatePreferences(prefs: Partial<NotificationPreferences>): Promise<void>;
-    private sseConnectionStatus;
-    connectSSE(onMessage: (data: any) => void): Promise<boolean>;
+    connectRealtime(onMessage: (data: any) => void): Promise<boolean>;
     connectWebSocket(onMessage: (data: any) => void): Promise<boolean>;
-    private handleSSEMessage;
-    private handleMessage;
-    disconnectWebSocket(): void;
-    startPolling(onPoll: () => Promise<void>): void;
+    connectSSE(onMessage: (data: any) => void): Promise<boolean>;
+    startPolling(callback: () => Promise<void> | void): void;
     stopPolling(): void;
-    private parseNotificationDates;
+    disconnectRealtime(): void;
 }

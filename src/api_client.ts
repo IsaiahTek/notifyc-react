@@ -11,42 +11,24 @@ import {
   NotificationStats
 } from './types';
 
-
-
 export class NotificationApiClient {
   private config: NotificationConfig;
-  private ws?: any;
+
+  private ws?: WebSocket;
   private sse?: EventSource;
-  private pollInterval?: any;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+
+  private wsPromise?: Promise<boolean>;
+  private ssePromise?: Promise<boolean>;
+
+  private pollingIntervalId?: ReturnType<typeof setInterval>;
 
   constructor(config: NotificationConfig) {
     this.config = config;
   }
 
-  private emitDebug(
-    source: NotificationDebugEvent['source'],
-    event: string,
-    level: NotificationDebugEvent['level'] = 'info',
-    details?: Record<string, unknown>
-  ): void {
-    const payload: NotificationDebugEvent = {
-      source,
-      event,
-      level,
-      timestamp: new Date().toISOString(),
-      ...(details ? { details } : {})
-    };
-
-    if (this.config.debug) {
-      const method = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
-      console[method]('[notifyc-react]', payload);
-    }
-
-    this.config.onDebugEvent?.(payload);
-  }
-
+  /* ============================================================
+     HTTP REQUESTS
+  ============================================================ */
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
 
@@ -65,6 +47,19 @@ export class NotificationApiClient {
     }
 
     return response.json();
+  }
+
+  /* ============================================================
+     DATE PARSER
+  ============================================================ */
+  private parseNotificationDates(notification: Notification): Notification {
+    return {
+      ...notification,
+      createdAt: notification.createdAt ? new Date(notification.createdAt) : new Date(),
+      readAt: notification.readAt ? new Date(notification.readAt) : undefined,
+      scheduledFor: notification.scheduledFor ? new Date(notification.scheduledFor) : undefined,
+      expiresAt: notification.expiresAt ? new Date(notification.expiresAt) : undefined,
+    };
   }
 
   async getNotifications(filters?: NotificationFilters): Promise<Notification[]> {
@@ -90,7 +85,6 @@ export class NotificationApiClient {
   async getUnreadCount(): Promise<number> {
     const rawResult = await this.request<{ count: number }>(`/notifications/${this.config.userId}/unread-count`);
     const result = this.config.dataLocator ? this.config.dataLocator(rawResult) : rawResult;
-    console.log("GOT UNREAD COUNT IN API: ", result.count, result);
     return result.count;
   }
 
@@ -126,67 +120,124 @@ export class NotificationApiClient {
     });
   }
 
-  private sseConnectionStatus: 'connecting' | 'connected' | 'error' | 'idle' = 'idle';
 
-  async connectSSE(onMessage: (data: any) => void): Promise<boolean> {
-    if (this.sse && this.sse.readyState === EventSource.OPEN) {
-      console.log("SSE already connected. Skipping duplicate connection.");
-      return true;
+  /* ============================================================
+     REALTIME CONNECTOR
+  ============================================================ */
+
+  async connectRealtime(onMessage: (data: any) => void): Promise<boolean> {
+    this.disconnectRealtime();
+
+    const wsConnected = await this.connectWebSocket(onMessage);
+    if (wsConnected) return true;
+
+    const sseConnected = await this.connectSSE(onMessage);
+    if (sseConnected) return true;
+
+    return false;
+  }
+
+  /* ============================================================
+     WEBSOCKET
+  ============================================================ */
+
+  async connectWebSocket(onMessage: (data: any) => void): Promise<boolean> {
+    if (this.wsPromise) return this.wsPromise;
+
+    if (this.ws) {
+      this.ws.close();
+      this.ws = undefined;
     }
-    if (typeof EventSource === 'undefined') return false;
 
-    if (this.sseConnectionStatus === 'connected') {
-      return true;
-    }
-    if (this.sseConnectionStatus === 'connecting') {
-      return false;
-    }
-
-    this.sseConnectionStatus = 'connecting';
-
-    const base = (this.config.sseUrl ?? this.config.apiUrl).replace(/\/+$/, '');
-    const configuredPath = this.config.ssePath ?? '/notifications/:userId/stream';
-    const normalizedPath = configuredPath.startsWith('/') ? configuredPath : `/${configuredPath}`;
-    const resolvedPath = normalizedPath.replace(':userId', encodeURIComponent(this.config.userId));
-    const streamUrl = new URL(`${base}${resolvedPath}`);
-    const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
-    if (token) {
-      streamUrl.searchParams.set(this.config.sseAuthQueryParam ?? 'token', token);
-    }
-    this.emitDebug('sse', 'connect-attempt', 'info', { url: streamUrl.origin + streamUrl.pathname });
-
-    return new Promise<boolean>((resolve) => {
+    this.wsPromise = new Promise<boolean>(async (resolve) => {
       let settled = false;
-      let opened = false;
-      const connectTimeoutMs = this.config.sseConnectTimeoutMs ?? 5000;
 
       const settle = (value: boolean) => {
         if (settled) return;
         settled = true;
+        this.wsPromise = undefined;
         resolve(value);
       };
 
-      this.sse = new EventSource(streamUrl.toString(), { withCredentials: true });
-      this.sse.addEventListener('initial-data', (event: MessageEvent) => {
-        this.handleSSEMessage(
-          'initial-data',
-          onMessage,
-          event.data
+      try {
+        const base = this.config.wsUrl ?? this.config.apiUrl;
+        const token = this.config.getAuthToken
+          ? await this.config.getAuthToken()
+          : null;
+
+        const wsUrl = new URL(base.replace(/^http/, 'ws'));
+        wsUrl.searchParams.set('userId', this.config.userId);
+        if (token) wsUrl.searchParams.set('token', token);
+
+        this.ws = new WebSocket(wsUrl.toString());
+
+        this.ws.onopen = () => settle(true);
+
+        this.ws.onmessage = (event) => {
+          try {
+            onMessage(JSON.parse(event.data));
+          } catch {
+            onMessage(event.data);
+          }
+        };
+
+        this.ws.onerror = () => {
+          if (!settled) settle(false);
+        };
+
+        this.ws.onclose = () => { };
+      } catch {
+        settle(false);
+      }
+    });
+
+    return this.wsPromise;
+  }
+
+  /* ============================================================
+     SERVER-SENT EVENTS
+  ============================================================ */
+
+  async connectSSE(onMessage: (data: any) => void): Promise<boolean> {
+    if (typeof EventSource === 'undefined') return false;
+    if (this.ssePromise) return this.ssePromise;
+
+    if (this.sse) {
+      this.sse.close();
+      this.sse = undefined;
+    }
+
+    this.ssePromise = new Promise<boolean>(async (resolve) => {
+      let settled = false;
+      let opened = false;
+      const timeoutMs = this.config.sseConnectTimeoutMs ?? 5000;
+
+      const settle = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        this.ssePromise = undefined;
+        resolve(value);
+      };
+
+      const base = (this.config.sseUrl ?? this.config.apiUrl).replace(/\/+$/, '');
+      const path = (this.config.ssePath ?? '/notifications/:userId/stream')
+        .replace(':userId', encodeURIComponent(this.config.userId));
+
+      const url = new URL(`${base}${path}`);
+
+      const token = this.config.getAuthToken
+        ? await this.config.getAuthToken()
+        : null;
+
+      if (token) {
+        url.searchParams.set(
+          this.config.sseAuthQueryParam ?? 'token',
+          token
         );
-      });
-      this.sse.addEventListener('notification', (event: MessageEvent) => {
-        this.handleSSEMessage(
-          'notification',
-          onMessage,
-          event.data
-        );
-      });
-      this.sse.addEventListener('unread-count', (event: MessageEvent) => {
-        this.handleSSEMessage(
-          'unread-count',
-          onMessage,
-          event.data
-        );
+      }
+
+      this.sse = new EventSource(url.toString(), {
+        withCredentials: true
       });
 
       const timeout = setTimeout(() => {
@@ -194,168 +245,82 @@ export class NotificationApiClient {
           this.sse?.close();
           this.sse = undefined;
           settle(false);
-          this.sseConnectionStatus = 'error';
         }
-      }, connectTimeoutMs);
+      }, timeoutMs);
 
       this.sse.onopen = () => {
         clearTimeout(timeout);
         opened = true;
-        this.reconnectAttempts = 0;
-        console.log('🔌 SSE connected');
-        this.emitDebug('sse', 'connected');
         settle(true);
-        this.sseConnectionStatus = 'connected';
       };
 
-      this.sse.onerror = (error) => {
-        console.error('❌ SSE error:', error);
-        this.emitDebug('sse', 'error', 'error', { opened });
+      this.sse.onmessage = (event) => {
+        try {
+          onMessage(JSON.parse(event.data));
+        } catch {
+          onMessage(event.data);
+        }
+      };
+
+      this.sse.onerror = () => {
         if (!opened) {
           clearTimeout(timeout);
           this.sse?.close();
           this.sse = undefined;
           settle(false);
-          this.sseConnectionStatus = 'error';
         }
       };
     });
+
+    return this.ssePromise;
   }
 
-  async connectWebSocket(onMessage: (data: any) => void): Promise<boolean> {
-    if (!this.config.wsUrl) return false;
+  /* ============================================================
+     POLLING
+  ============================================================ */
 
-    try {
-      const { io } = await import('socket.io-client');
-      const token = this.config.getAuthToken ? await this.config.getAuthToken() : null;
+  startPolling(callback: () => Promise<void> | void) {
+    if (!this.config.pollInterval) return;
 
-      this.emitDebug('websocket', 'connect-attempt', 'info', {
-        url: this.config.wsUrl
-      });
-
-      console.log("ABOUT TO CONNECT TO WEBSOCKET");
-
-      return new Promise<boolean>((resolve) => {
-        let settled = false;
-
-        const settle = (value: boolean) => {
-          if (settled) return;
-          settled = true;
-          resolve(value);
-        };
-
-        this.ws = io(`${this.config.wsUrl}/notifications`, {
-          query: { userId: this.config.userId },
-          ...(token && { auth: { token } }),
-          withCredentials: true,
-          transports: ['websocket', 'polling'],
-          reconnectionAttempts: this.maxReconnectAttempts,
-          timeout: 5000,
-        });
-
-        this.ws.on('connect', () => {
-          console.log('🔌 WebSocket connected');
-          this.emitDebug('websocket', 'connected');
-          this.reconnectAttempts = 0;
-          settle(true);
-        });
-
-        this.ws.on('connect_error', (err: any) => {
-          console.error('❌ connect_error:', err.message);
-          this.emitDebug('websocket', 'connect-error', 'error', {
-            message: err.message
-          });
-          settle(false);
-        });
-
-        this.ws.on('disconnect', (reason: string) => {
-          console.log('🔌 Socket.IO disconnected:', reason);
-          this.emitDebug('websocket', 'disconnected', 'warn', { reason });
-        });
-
-        this.ws.on('initial-data', (data: any) => this.handleMessage(data, onMessage));
-        this.ws.on('notification', (data: any) => this.handleMessage(data, onMessage));
-        this.ws.on('unread-count', (data: any) => this.handleMessage(data, onMessage));
-      });
-
-    } catch (error) {
-      console.error('Failed to initialize socket.io-client:', error);
-      this.emitDebug('websocket', 'connect-failed', 'error');
-      return false;
+    // Prevent duplicate polling loops
+    if (this.pollingIntervalId) {
+      clearInterval(this.pollingIntervalId);
     }
-  }
 
-  private handleSSEMessage(eventType: string, onMessage: (data: any) => void, rawData?: any) {
-    let parsed = rawData;
-
-    if (typeof rawData === 'string') {
+    this.pollingIntervalId = setInterval(async () => {
       try {
-        parsed = JSON.parse(rawData);
-      } catch {
-        parsed = { data: rawData };
+        await callback();
+      } catch (err) {
+        console.error('[notifyc] Polling error:', err);
       }
-    }
-
-    onMessage({
-      type: eventType,
-      ...(parsed ?? {})
-    });
+    }, this.config.pollInterval);
   }
 
-  // Helper function to process messages (optional, based on your original logic)
-  private handleMessage = (data: any, onMessage: (data: any) => void) => {
-    if (data.notification) {
-      data.notification = this.parseNotificationDates(data.notification);
+  stopPolling() {
+    if (this.pollingIntervalId) {
+      clearInterval(this.pollingIntervalId);
+      this.pollingIntervalId = undefined;
     }
-    if (Array.isArray(data.notifications)) {
-      data.notifications = data.notifications.map((notification: Notification) => this.parseNotificationDates(notification));
-    }
-    onMessage(data);
   }
 
-  disconnectWebSocket(): void {
+  /* ============================================================
+     CLEANUP
+  ============================================================ */
+
+  disconnectRealtime(): void {
     if (this.sse) {
       this.sse.close();
       this.sse = undefined;
-      this.emitDebug('sse', 'closed', 'warn');
     }
 
     if (this.ws) {
       this.ws.close();
       this.ws = undefined;
-      this.emitDebug('websocket', 'closed', 'warn');
     }
-  }
 
-  startPolling(onPoll: () => Promise<void>): void {
-    if (!this.config.pollInterval) return;
-    this.emitDebug('polling', 'started', 'info', { intervalMs: this.config.pollInterval });
+    this.stopPolling();
 
-    this.pollInterval = setInterval(async () => {
-      try {
-        await onPoll();
-      } catch (error) {
-        console.error('Polling error:', error);
-        this.emitDebug('polling', 'error', 'error');
-      }
-    }, this.config.pollInterval);
-  }
-
-  stopPolling(): void {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = undefined;
-      this.emitDebug('polling', 'stopped', 'warn');
-    }
-  }
-
-  private parseNotificationDates(notification: Notification): Notification {
-    return {
-      ...notification,
-      createdAt: notification.createdAt ? new Date(notification.createdAt) : new Date(),
-      readAt: notification.readAt ? new Date(notification.readAt) : undefined,
-      scheduledFor: notification.scheduledFor ? new Date(notification.scheduledFor) : undefined,
-      expiresAt: notification.expiresAt ? new Date(notification.expiresAt) : undefined,
-    };
+    this.wsPromise = undefined;
+    this.ssePromise = undefined;
   }
 }

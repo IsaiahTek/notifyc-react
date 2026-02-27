@@ -150,8 +150,7 @@ export function initializeNotifications(config: NotificationConfig, onInitialize
 
 export function disconnectNotifications() {
   if (apiClient) {
-    apiClient.disconnectWebSocket();
-    apiClient.stopPolling();
+    apiClient.disconnectRealtime();
     const snapshot = notificationStore.snapshot as unknown as NotificationState | NotificationState[];
     const state = Array.isArray(snapshot) ? snapshot[0] : snapshot;
     notificationStore.update({

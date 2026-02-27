@@ -213,8 +213,7 @@ function initializeNotifications(config, onInitialized) {
 }
 function disconnectNotifications() {
     if (exports.apiClient) {
-        exports.apiClient.disconnectWebSocket();
-        exports.apiClient.stopPolling();
+        exports.apiClient.disconnectRealtime();
         var snapshot = store_1.notificationStore.snapshot;
         var state = Array.isArray(snapshot) ? snapshot[0] : snapshot;
         store_1.notificationStore.update(__assign(__assign({}, state), { isConnected: false, realtime: __assign(__assign({}, state.realtime), { status: 'idle', lastEvent: 'disconnected', updatedAt: new Date() }) }), "key");

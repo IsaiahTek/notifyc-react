@@ -53,32 +53,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationApiClient = void 0;
 var NotificationApiClient = /** @class */ (function () {
     function NotificationApiClient(config) {
-        var _this = this;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.sseConnectionStatus = 'idle';
-        // Helper function to process messages (optional, based on your original logic)
-        this.handleMessage = function (data, onMessage) {
-            if (data.notification) {
-                data.notification = _this.parseNotificationDates(data.notification);
-            }
-            if (Array.isArray(data.notifications)) {
-                data.notifications = data.notifications.map(function (notification) { return _this.parseNotificationDates(notification); });
-            }
-            onMessage(data);
-        };
         this.config = config;
     }
-    NotificationApiClient.prototype.emitDebug = function (source, event, level, details) {
-        var _a, _b;
-        if (level === void 0) { level = 'info'; }
-        var payload = __assign({ source: source, event: event, level: level, timestamp: new Date().toISOString() }, (details ? { details: details } : {}));
-        if (this.config.debug) {
-            var method = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
-            console[method]('[notifyc-react]', payload);
-        }
-        (_b = (_a = this.config).onDebugEvent) === null || _b === void 0 ? void 0 : _b.call(_a, payload);
-    };
+    /* ============================================================
+       HTTP REQUESTS
+    ============================================================ */
     NotificationApiClient.prototype.request = function (endpoint_1) {
         return __awaiter(this, arguments, void 0, function (endpoint, options) {
             var token, _a, response;
@@ -106,6 +85,12 @@ var NotificationApiClient = /** @class */ (function () {
                 }
             });
         });
+    };
+    /* ============================================================
+       DATE PARSER
+    ============================================================ */
+    NotificationApiClient.prototype.parseNotificationDates = function (notification) {
+        return __assign(__assign({}, notification), { createdAt: notification.createdAt ? new Date(notification.createdAt) : new Date(), readAt: notification.readAt ? new Date(notification.readAt) : undefined, scheduledFor: notification.scheduledFor ? new Date(notification.scheduledFor) : undefined, expiresAt: notification.expiresAt ? new Date(notification.expiresAt) : undefined });
     };
     NotificationApiClient.prototype.getNotifications = function (filters) {
         return __awaiter(this, void 0, void 0, function () {
@@ -144,7 +129,6 @@ var NotificationApiClient = /** @class */ (function () {
                     case 1:
                         rawResult = _a.sent();
                         result = this.config.dataLocator ? this.config.dataLocator(rawResult) : rawResult;
-                        console.log("GOT UNREAD COUNT IN API: ", result.count, result);
                         return [2 /*return*/, result.count];
                 }
             });
@@ -233,214 +217,219 @@ var NotificationApiClient = /** @class */ (function () {
             });
         });
     };
-    NotificationApiClient.prototype.connectSSE = function (onMessage) {
+    /* ============================================================
+       REALTIME CONNECTOR
+    ============================================================ */
+    NotificationApiClient.prototype.connectRealtime = function (onMessage) {
         return __awaiter(this, void 0, void 0, function () {
-            var base, configuredPath, normalizedPath, resolvedPath, streamUrl, token, _a;
-            var _this = this;
-            var _b, _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var wsConnected, sseConnected;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        if (this.sse && this.sse.readyState === EventSource.OPEN) {
-                            console.log("SSE already connected. Skipping duplicate connection.");
-                            return [2 /*return*/, true];
-                        }
-                        if (typeof EventSource === 'undefined')
-                            return [2 /*return*/, false];
-                        if (this.sseConnectionStatus === 'connected') {
-                            return [2 /*return*/, true];
-                        }
-                        if (this.sseConnectionStatus === 'connecting') {
-                            return [2 /*return*/, false];
-                        }
-                        this.sseConnectionStatus = 'connecting';
-                        base = ((_b = this.config.sseUrl) !== null && _b !== void 0 ? _b : this.config.apiUrl).replace(/\/+$/, '');
-                        configuredPath = (_c = this.config.ssePath) !== null && _c !== void 0 ? _c : '/notifications/:userId/stream';
-                        normalizedPath = configuredPath.startsWith('/') ? configuredPath : "/".concat(configuredPath);
-                        resolvedPath = normalizedPath.replace(':userId', encodeURIComponent(this.config.userId));
-                        streamUrl = new URL("".concat(base).concat(resolvedPath));
-                        if (!this.config.getAuthToken) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.config.getAuthToken()];
+                        this.disconnectRealtime();
+                        return [4 /*yield*/, this.connectWebSocket(onMessage)];
                     case 1:
-                        _a = _e.sent();
-                        return [3 /*break*/, 3];
+                        wsConnected = _a.sent();
+                        if (wsConnected)
+                            return [2 /*return*/, true];
+                        return [4 /*yield*/, this.connectSSE(onMessage)];
                     case 2:
-                        _a = null;
-                        _e.label = 3;
-                    case 3:
-                        token = _a;
-                        if (token) {
-                            streamUrl.searchParams.set((_d = this.config.sseAuthQueryParam) !== null && _d !== void 0 ? _d : 'token', token);
-                        }
-                        this.emitDebug('sse', 'connect-attempt', 'info', { url: streamUrl.origin + streamUrl.pathname });
-                        return [2 /*return*/, new Promise(function (resolve) {
-                                var _a;
-                                var settled = false;
-                                var opened = false;
-                                var connectTimeoutMs = (_a = _this.config.sseConnectTimeoutMs) !== null && _a !== void 0 ? _a : 5000;
-                                var settle = function (value) {
+                        sseConnected = _a.sent();
+                        if (sseConnected)
+                            return [2 /*return*/, true];
+                        return [2 /*return*/, false];
+                }
+            });
+        });
+    };
+    /* ============================================================
+       WEBSOCKET
+    ============================================================ */
+    NotificationApiClient.prototype.connectWebSocket = function (onMessage) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                if (this.wsPromise)
+                    return [2 /*return*/, this.wsPromise];
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = undefined;
+                }
+                this.wsPromise = new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+                    var settled, settle, base, token, _a, wsUrl, _b;
+                    var _this = this;
+                    var _c;
+                    return __generator(this, function (_d) {
+                        switch (_d.label) {
+                            case 0:
+                                settled = false;
+                                settle = function (value) {
                                     if (settled)
                                         return;
                                     settled = true;
+                                    _this.wsPromise = undefined;
                                     resolve(value);
                                 };
-                                _this.sse = new EventSource(streamUrl.toString(), { withCredentials: true });
-                                _this.sse.addEventListener('initial-data', function (event) {
-                                    _this.handleSSEMessage('initial-data', onMessage, event.data);
+                                _d.label = 1;
+                            case 1:
+                                _d.trys.push([1, 5, , 6]);
+                                base = (_c = this.config.wsUrl) !== null && _c !== void 0 ? _c : this.config.apiUrl;
+                                if (!this.config.getAuthToken) return [3 /*break*/, 3];
+                                return [4 /*yield*/, this.config.getAuthToken()];
+                            case 2:
+                                _a = _d.sent();
+                                return [3 /*break*/, 4];
+                            case 3:
+                                _a = null;
+                                _d.label = 4;
+                            case 4:
+                                token = _a;
+                                wsUrl = new URL(base.replace(/^http/, 'ws'));
+                                wsUrl.searchParams.set('userId', this.config.userId);
+                                if (token)
+                                    wsUrl.searchParams.set('token', token);
+                                this.ws = new WebSocket(wsUrl.toString());
+                                this.ws.onopen = function () { return settle(true); };
+                                this.ws.onmessage = function (event) {
+                                    try {
+                                        onMessage(JSON.parse(event.data));
+                                    }
+                                    catch (_a) {
+                                        onMessage(event.data);
+                                    }
+                                };
+                                this.ws.onerror = function () {
+                                    if (!settled)
+                                        settle(false);
+                                };
+                                this.ws.onclose = function () { };
+                                return [3 /*break*/, 6];
+                            case 5:
+                                _b = _d.sent();
+                                settle(false);
+                                return [3 /*break*/, 6];
+                            case 6: return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [2 /*return*/, this.wsPromise];
+            });
+        });
+    };
+    /* ============================================================
+       SERVER-SENT EVENTS
+    ============================================================ */
+    NotificationApiClient.prototype.connectSSE = function (onMessage) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                if (typeof EventSource === 'undefined')
+                    return [2 /*return*/, false];
+                if (this.ssePromise)
+                    return [2 /*return*/, this.ssePromise];
+                if (this.sse) {
+                    this.sse.close();
+                    this.sse = undefined;
+                }
+                this.ssePromise = new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+                    var settled, opened, timeoutMs, settle, base, path, url, token, _a, timeout;
+                    var _this = this;
+                    var _b, _c, _d, _e;
+                    return __generator(this, function (_f) {
+                        switch (_f.label) {
+                            case 0:
+                                settled = false;
+                                opened = false;
+                                timeoutMs = (_b = this.config.sseConnectTimeoutMs) !== null && _b !== void 0 ? _b : 5000;
+                                settle = function (value) {
+                                    if (settled)
+                                        return;
+                                    settled = true;
+                                    _this.ssePromise = undefined;
+                                    resolve(value);
+                                };
+                                base = ((_c = this.config.sseUrl) !== null && _c !== void 0 ? _c : this.config.apiUrl).replace(/\/+$/, '');
+                                path = ((_d = this.config.ssePath) !== null && _d !== void 0 ? _d : '/notifications/:userId/stream')
+                                    .replace(':userId', encodeURIComponent(this.config.userId));
+                                url = new URL("".concat(base).concat(path));
+                                if (!this.config.getAuthToken) return [3 /*break*/, 2];
+                                return [4 /*yield*/, this.config.getAuthToken()];
+                            case 1:
+                                _a = _f.sent();
+                                return [3 /*break*/, 3];
+                            case 2:
+                                _a = null;
+                                _f.label = 3;
+                            case 3:
+                                token = _a;
+                                if (token) {
+                                    url.searchParams.set((_e = this.config.sseAuthQueryParam) !== null && _e !== void 0 ? _e : 'token', token);
+                                }
+                                this.sse = new EventSource(url.toString(), {
+                                    withCredentials: true
                                 });
-                                _this.sse.addEventListener('notification', function (event) {
-                                    _this.handleSSEMessage('notification', onMessage, event.data);
-                                });
-                                _this.sse.addEventListener('unread-count', function (event) {
-                                    _this.handleSSEMessage('unread-count', onMessage, event.data);
-                                });
-                                var timeout = setTimeout(function () {
+                                timeout = setTimeout(function () {
                                     var _a;
                                     if (!opened) {
                                         (_a = _this.sse) === null || _a === void 0 ? void 0 : _a.close();
                                         _this.sse = undefined;
                                         settle(false);
-                                        _this.sseConnectionStatus = 'error';
                                     }
-                                }, connectTimeoutMs);
-                                _this.sse.onopen = function () {
+                                }, timeoutMs);
+                                this.sse.onopen = function () {
                                     clearTimeout(timeout);
                                     opened = true;
-                                    _this.reconnectAttempts = 0;
-                                    console.log('🔌 SSE connected');
-                                    _this.emitDebug('sse', 'connected');
                                     settle(true);
-                                    _this.sseConnectionStatus = 'connected';
                                 };
-                                _this.sse.onerror = function (error) {
+                                this.sse.onmessage = function (event) {
+                                    try {
+                                        onMessage(JSON.parse(event.data));
+                                    }
+                                    catch (_a) {
+                                        onMessage(event.data);
+                                    }
+                                };
+                                this.sse.onerror = function () {
                                     var _a;
-                                    console.error('❌ SSE error:', error);
-                                    _this.emitDebug('sse', 'error', 'error', { opened: opened });
                                     if (!opened) {
                                         clearTimeout(timeout);
                                         (_a = _this.sse) === null || _a === void 0 ? void 0 : _a.close();
                                         _this.sse = undefined;
                                         settle(false);
-                                        _this.sseConnectionStatus = 'error';
                                     }
                                 };
-                            })];
-                }
+                                return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [2 /*return*/, this.ssePromise];
             });
         });
     };
-    NotificationApiClient.prototype.connectWebSocket = function (onMessage) {
-        return __awaiter(this, void 0, void 0, function () {
-            var io_1, token_1, _a, error_1;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (!this.config.wsUrl)
-                            return [2 /*return*/, false];
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 6, , 7]);
-                        return [4 /*yield*/, Promise.resolve().then(function () { return require('socket.io-client'); })];
-                    case 2:
-                        io_1 = (_b.sent()).io;
-                        if (!this.config.getAuthToken) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.config.getAuthToken()];
-                    case 3:
-                        _a = _b.sent();
-                        return [3 /*break*/, 5];
-                    case 4:
-                        _a = null;
-                        _b.label = 5;
-                    case 5:
-                        token_1 = _a;
-                        this.emitDebug('websocket', 'connect-attempt', 'info', {
-                            url: this.config.wsUrl
-                        });
-                        console.log("ABOUT TO CONNECT TO WEBSOCKET");
-                        return [2 /*return*/, new Promise(function (resolve) {
-                                var settled = false;
-                                var settle = function (value) {
-                                    if (settled)
-                                        return;
-                                    settled = true;
-                                    resolve(value);
-                                };
-                                _this.ws = io_1("".concat(_this.config.wsUrl, "/notifications"), __assign(__assign({ query: { userId: _this.config.userId } }, (token_1 && { auth: { token: token_1 } })), { withCredentials: true, transports: ['websocket', 'polling'], reconnectionAttempts: _this.maxReconnectAttempts, timeout: 5000 }));
-                                _this.ws.on('connect', function () {
-                                    console.log('🔌 WebSocket connected');
-                                    _this.emitDebug('websocket', 'connected');
-                                    _this.reconnectAttempts = 0;
-                                    settle(true);
-                                });
-                                _this.ws.on('connect_error', function (err) {
-                                    console.error('❌ connect_error:', err.message);
-                                    _this.emitDebug('websocket', 'connect-error', 'error', {
-                                        message: err.message
-                                    });
-                                    settle(false);
-                                });
-                                _this.ws.on('disconnect', function (reason) {
-                                    console.log('🔌 Socket.IO disconnected:', reason);
-                                    _this.emitDebug('websocket', 'disconnected', 'warn', { reason: reason });
-                                });
-                                _this.ws.on('initial-data', function (data) { return _this.handleMessage(data, onMessage); });
-                                _this.ws.on('notification', function (data) { return _this.handleMessage(data, onMessage); });
-                                _this.ws.on('unread-count', function (data) { return _this.handleMessage(data, onMessage); });
-                            })];
-                    case 6:
-                        error_1 = _b.sent();
-                        console.error('Failed to initialize socket.io-client:', error_1);
-                        this.emitDebug('websocket', 'connect-failed', 'error');
-                        return [2 /*return*/, false];
-                    case 7: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    NotificationApiClient.prototype.handleSSEMessage = function (eventType, onMessage, rawData) {
-        var parsed = rawData;
-        if (typeof rawData === 'string') {
-            try {
-                parsed = JSON.parse(rawData);
-            }
-            catch (_a) {
-                parsed = { data: rawData };
-            }
-        }
-        onMessage(__assign({ type: eventType }, (parsed !== null && parsed !== void 0 ? parsed : {})));
-    };
-    NotificationApiClient.prototype.disconnectWebSocket = function () {
-        if (this.sse) {
-            this.sse.close();
-            this.sse = undefined;
-            this.emitDebug('sse', 'closed', 'warn');
-        }
-        if (this.ws) {
-            this.ws.close();
-            this.ws = undefined;
-            this.emitDebug('websocket', 'closed', 'warn');
-        }
-    };
-    NotificationApiClient.prototype.startPolling = function (onPoll) {
+    /* ============================================================
+       POLLING
+    ============================================================ */
+    NotificationApiClient.prototype.startPolling = function (callback) {
         var _this = this;
         if (!this.config.pollInterval)
             return;
-        this.emitDebug('polling', 'started', 'info', { intervalMs: this.config.pollInterval });
-        this.pollInterval = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-            var error_2;
+        // Prevent duplicate polling loops
+        if (this.pollingIntervalId) {
+            clearInterval(this.pollingIntervalId);
+        }
+        this.pollingIntervalId = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
+            var err_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, onPoll()];
+                        return [4 /*yield*/, callback()];
                     case 1:
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _a.sent();
-                        console.error('Polling error:', error_2);
-                        this.emitDebug('polling', 'error', 'error');
+                        err_1 = _a.sent();
+                        console.error('[notifyc] Polling error:', err_1);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
                 }
@@ -448,14 +437,26 @@ var NotificationApiClient = /** @class */ (function () {
         }); }, this.config.pollInterval);
     };
     NotificationApiClient.prototype.stopPolling = function () {
-        if (this.pollInterval) {
-            clearInterval(this.pollInterval);
-            this.pollInterval = undefined;
-            this.emitDebug('polling', 'stopped', 'warn');
+        if (this.pollingIntervalId) {
+            clearInterval(this.pollingIntervalId);
+            this.pollingIntervalId = undefined;
         }
     };
-    NotificationApiClient.prototype.parseNotificationDates = function (notification) {
-        return __assign(__assign({}, notification), { createdAt: notification.createdAt ? new Date(notification.createdAt) : new Date(), readAt: notification.readAt ? new Date(notification.readAt) : undefined, scheduledFor: notification.scheduledFor ? new Date(notification.scheduledFor) : undefined, expiresAt: notification.expiresAt ? new Date(notification.expiresAt) : undefined });
+    /* ============================================================
+       CLEANUP
+    ============================================================ */
+    NotificationApiClient.prototype.disconnectRealtime = function () {
+        if (this.sse) {
+            this.sse.close();
+            this.sse = undefined;
+        }
+        if (this.ws) {
+            this.ws.close();
+            this.ws = undefined;
+        }
+        this.stopPolling();
+        this.wsPromise = undefined;
+        this.ssePromise = undefined;
     };
     return NotificationApiClient;
 }());
