@@ -356,7 +356,7 @@ var NotificationApiClient = /** @class */ (function () {
                                 _c.label = 1;
                             case 1:
                                 _c.trys.push([1, 5, , 6]);
-                                base = ((_b = this.config.wsUrl) !== null && _b !== void 0 ? _b : this.config.apiUrl).replace(/\/+$/, '/notifications');
+                                base = ((_b = this.config.wsUrl) !== null && _b !== void 0 ? _b : this.config.apiUrl).replace(/\/+$/, '');
                                 if (!this.config.getAuthToken) return [3 /*break*/, 3];
                                 return [4 /*yield*/, this.config.getAuthToken()];
                             case 2:
@@ -367,7 +367,7 @@ var NotificationApiClient = /** @class */ (function () {
                                 _c.label = 4;
                             case 4:
                                 token = _a;
-                                this.ws = (0, socket_io_client_1.io)(base, {
+                                this.ws = (0, socket_io_client_1.io)("".concat(base, "/notifications"), {
                                     auth: {
                                         token: token,
                                         userId: this.config.userId,
