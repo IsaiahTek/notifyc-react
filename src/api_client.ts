@@ -243,7 +243,7 @@ export class NotificationApiClient {
           ? await this.config.getAuthToken()
           : null;
 
-        const wsUrl = new URL(`${base}/notifications`.replace(/^http/, 'ws'));
+        const wsUrl = new URL(`${base}/notifications`);
         wsUrl.searchParams.set('userId', this.config.userId);
         if (token) wsUrl.searchParams.set('token', token);
 

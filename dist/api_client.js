@@ -366,7 +366,7 @@ var NotificationApiClient = /** @class */ (function () {
                                 _d.label = 4;
                             case 4:
                                 token = _a;
-                                wsUrl = new URL("".concat(base, "/notifications").replace(/^http/, 'ws'));
+                                wsUrl = new URL("".concat(base, "/notifications"));
                                 wsUrl.searchParams.set('userId', this.config.userId);
                                 if (token)
                                     wsUrl.searchParams.set('token', token);
