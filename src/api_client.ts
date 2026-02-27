@@ -129,6 +129,10 @@ export class NotificationApiClient {
   private sseConnectionStatus: 'connecting' | 'connected' | 'error' | 'idle' = 'idle';
 
   async connectSSE(onMessage: (data: any) => void): Promise<boolean> {
+    if (this.sse && this.sse.readyState === EventSource.OPEN) {
+      console.log("SSE already connected. Skipping duplicate connection.");
+      return true;
+    }
     if (typeof EventSource === 'undefined') return false;
 
     if (this.sseConnectionStatus === 'connected') {

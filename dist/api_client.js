@@ -241,6 +241,10 @@ var NotificationApiClient = /** @class */ (function () {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
+                        if (this.sse && this.sse.readyState === EventSource.OPEN) {
+                            console.log("SSE already connected. Skipping duplicate connection.");
+                            return [2 /*return*/, true];
+                        }
                         if (typeof EventSource === 'undefined')
                             return [2 /*return*/, false];
                         if (this.sseConnectionStatus === 'connected') {
